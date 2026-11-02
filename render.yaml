@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: nexus-pulse-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_MODELS
+        value: gemini-2.5-flash,gemini-1.5-flash
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: SUPABASE_URL
+        value: https://ervfizmcgcatlwynupbt.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: sb_publishable_IJTTMi5K-ariqsakvSrYiA_LmeINzor
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:///./nexus_pulse.db
