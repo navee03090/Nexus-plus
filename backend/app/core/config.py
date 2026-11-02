@@ -1,0 +1,119 @@
+"""
+Application configuration for NEXUS PULSE.
+Supports environment variable loading with type safety and defaults.
+"""
+from typing import List, Optional
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    # Base application
+    APP_NAME: str = "NEXUS PULSE"
+    APP_TAGLINE: str = "Never Miss the Opportunity That Matters."
+    APP_ENV: str = "development"
+    DEBUG: bool = True
+    SECRET_KEY: str = "nexus-pulse-super-secret-key-change-in-production"
+
+    # Regional defaults
+    DEFAULT_TIMEZONE: str = "Asia/Karachi"
+    DEFAULT_COUNTRY: str = "Pakistan"
+
+    # Supabase & Database
+    SUPABASE_URL: str = "https://ervfizmcgcatlwynupbt.supabase.co"
+    SUPABASE_ANON_KEY: str = "sb_publishable_IJTTMi5K-ariqsakvSrYiA_LmeINzor"
+    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
+    JWT_SECRET: Optional[str] = None
+    DATABASE_URL: str = "sqlite+aiosqlite:///./nexus_pulse.db"
+
+    # Storage
+    STORAGE_BUCKET: str = "nexus-pulse-media"
+    STORAGE_FLYERS_BUCKET: str = "nexus-pulse-flyers"
+    STORAGE_AVATARS_BUCKET: str = "nexus-pulse-avatars"
+    LOCAL_STORAGE_DIR: str = "./media_uploads"
+
+    # Redis & Celery
+    REDIS_URL: str = "redis://localhost:6379/0"
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
+
+    # AI Multimodal Providers (Gemini & Groq with Auto Failover & Key Rotation)
+    LLM_PROVIDER: str = "auto"
+    GEMINI_API_KEYS: Optional[str] = None
+    GEMINI_MODELS: Optional[str] = "gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash,gemini-2.5-flash,gemini-flash-lite-latest"
+    GROQ_API_KEYS: Optional[str] = None
+    GROQ_MODELS: Optional[str] = "openai/gpt-oss-120b,openai/gpt-oss-20b"
+
+    # Backward-compatibility defaults
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-3.8-flash"
+    EMBEDDING_MODEL: str = "gemini-embedding-001"
+    EMBEDDING_DIMENSION: int = 768
+
+    # CORS
+    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
+
+    # Rate Limiting & Crawling Limits
+    CRAWLER_USER_AGENT: str = "NexusPulse-Bot/1.0 (+https://nexus-pulse.org/bot; opportunity-intelligence)"
+    DEFAULT_CRAWL_DELAY_SECONDS: float = 1.0
+    REQUEST_TIMEOUT_SECONDS: float = 15.0
+    MAX_CONTENT_LENGTH_BYTES: int = 15 * 1024 * 1024  # 15 MB
+
+    # Notifications
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM: str = "Nexus Pulse <alerts@nexus-pulse.org>"
+    TELEGRAM_BOT_TOKEN: Optional[str] = None
+
+    # Apify Cloud Integration (Facebook & Instagram Public Crawlers)
+    APIFY_API_TOKEN: Optional[str] = None
+
+    # Meta Graph API (Official Facebook & Instagram Webhooks)
+    META_APP_ID: Optional[str] = None
+    META_APP_SECRET: Optional[str] = None
+    META_VERIFY_TOKEN: str = "nexus_pulse_meta_verify_2026"
+
+    model_config = SettingsConfigDict(
+        env_file=(".env", "../.env"),
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
+
+    @property
+    def cors_origins_list(self) -> List[str]:
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def gemini_api_keys_list(self) -> List[str]:
+        keys = []
+        if self.GEMINI_API_KEYS:
+            keys.extend([k.strip() for k in self.GEMINI_API_KEYS.split(",") if k.strip()])
+        if self.GEMINI_API_KEY and self.GEMINI_API_KEY not in keys:
+            keys.append(self.GEMINI_API_KEY.strip())
+        return keys
+
+    @property
+    def gemini_models_list(self) -> List[str]:
+        if self.GEMINI_MODELS:
+            models = [m.strip() for m in self.GEMINI_MODELS.split(",") if m.strip()]
+            if models:
+                return models
+        return [self.GEMINI_MODEL] if self.GEMINI_MODEL else ["gemini-3.8-flash"]
+
+    @property
+    def groq_api_keys_list(self) -> List[str]:
+        if self.GROQ_API_KEYS:
+            return [k.strip() for k in self.GROQ_API_KEYS.split(",") if k.strip()]
+        return []
+
+    @property
+    def groq_models_list(self) -> List[str]:
+        if self.GROQ_MODELS:
+            models = [m.strip() for m in self.GROQ_MODELS.split(",") if m.strip()]
+            if models:
+                return models
+        return ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+
+
+settings = Settings()

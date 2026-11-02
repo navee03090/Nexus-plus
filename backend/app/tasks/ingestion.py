@@ -1,0 +1,314 @@
+"""
+Ingestion Task Workers & Autonomous Crawler Engine.
+Features idempotent execution, polite rate limiting, automated multimodal AI extraction,
+deterministic validation, canonical opportunity resolution, and telemetry logging.
+"""
+import uuid
+import asyncio
+from datetime import datetime, timezone
+from typing import Dict, Any, Optional, List
+from sqlalchemy import select
+
+from app.tasks.celery_app import celery
+from app.core.database import AsyncSessionLocal
+from app.core.config import settings
+from app.core.logging import logger
+from app.models.source import Source
+from app.models.source_item import SourceItem, SourceMedia
+from app.models.extraction import Extraction
+from app.models.audit import IngestionRun, IngestionError
+from app.services.ingestion import get_adapter_for_source
+from app.algorithms.rate_limiter import SourceRateLimiter
+from app.services.extraction.extractor import ExtractionPipeline
+from app.services.opportunities.resolver import OpportunityResolver
+
+
+async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict[str, Any]:
+    """
+    Core Autonomous Crawler execution function.
+    Safely executes within an existing AsyncSession or manages its own session.
+    Can be called directly by FastAPI async endpoints, Celery workers, or background cron.
+    """
+    owns_session = db is None
+    if owns_session:
+        session_ctx = AsyncSessionLocal()
+        db = await session_ctx.__aenter__()
+    else:
+        session_ctx = None
+
+    try:
+        source = await db.get(Source, source_id)
+        if not source:
+            logger.warning(f"Source {source_id} not found.")
+            return {"source_id": source_id, "status": "not_found", "error": "Source does not exist."}
+
+        if not source.is_active:
+            logger.info(f"Source {source.name} ({source_id}) is paused/inactive. Skipping crawl.")
+            return {"source_id": source_id, "status": "skipped", "reason": "Source is inactive"}
+
+        # 1. Enforce Per-Source Crawl Politeness Rate Limit
+        await SourceRateLimiter.acquire_slot(source_id, min_delay_seconds=1.0)
+
+        # 2. Register IngestionRun entry for observability
+        run = IngestionRun(
+            source_id=source.id,
+            status="running",
+            started_at=datetime.now(timezone.utc)
+        )
+        db.add(run)
+        await db.commit()
+        await db.refresh(run)
+
+        try:
+            # 3. Instantiate configured adapter and fetch raw evidence items
+            adapter = get_adapter_for_source(
+                source_id=source.id,
+                source_type=source.source_type,
+                source_url=source.url,
+                parser_key=source.parser_key
+            )
+            items = await adapter.fetch_items()
+
+            discovered_count = len(items)
+            saved_count = 0
+            published_count = 0
+            updated_count = 0
+            dup_count = 0
+
+            # 4. Process each discovered item with deduplication & AI pipeline
+            for item in items:
+                content_hash = item.content_hash
+                # Idempotency check: see if item with hash already exists
+                hash_stmt = select(SourceItem).where(
+                    SourceItem.source_id == source.id,
+                    SourceItem.content_hash == content_hash
+                )
+                existing_item = (await db.execute(hash_stmt)).scalars().first()
+
+                if existing_item:
+                    dup_count += 1
+                    continue
+
+                # 4a. Store new raw evidence item
+                s_item = SourceItem(
+                    id=str(uuid.uuid4()),
+                    source_id=source.id,
+                    external_id=item.external_id,
+                    canonical_url=item.canonical_url,
+                    content_hash=content_hash,
+                    title_raw=item.title_raw,
+                    caption_raw=item.caption_raw,
+                    body_raw=item.body_raw,
+                    published_at=item.published_at,
+                    raw_payload=item.raw_payload,
+                    content_type=item.content_type,
+                    status="processing"
+                )
+                db.add(s_item)
+                await db.flush()
+
+                # 4b. Save attached media references
+                for m in item.media_items:
+                    s_media = SourceMedia(
+                        id=str(uuid.uuid4()),
+                        source_item_id=s_item.id,
+                        media_type=m.media_type,
+                        original_url=m.url,
+                        mime_type=m.mime_type
+                    )
+                    db.add(s_media)
+                await db.flush()
+                saved_count += 1
+
+                # 4c. Automated Downstream Processing: Multimodal Extraction & Canonical Resolution
+                try:
+                    pipeline = ExtractionPipeline()
+                    extraction_output, val_result, qr_codes, ocr_text = await pipeline.process_raw_evidence(item)
+
+                    # Save Extraction record
+                    extraction_rec = Extraction(
+                        id=str(uuid.uuid4()),
+                        source_item_id=s_item.id,
+                        model_name=pipeline.ai_provider.model_name,
+                        prompt_version="crawler-v1",
+                        raw_response=extraction_output.model_dump(),
+                        structured_output=val_result.validated_data,
+                        confidence_score=extraction_output.confidence_score,
+                        validation_status="valid" if val_result.is_valid else "flagged",
+                        validation_warnings=val_result.warnings
+                    )
+                    db.add(extraction_rec)
+                    await db.flush()
+
+                    flyer_url_candidate = None
+                    for m in item.media_items:
+                        if m.media_type in ["flyer", "image"]:
+                            flyer_url_candidate = m.url
+                            break
+
+                    opp, is_new, changes = await OpportunityResolver.resolve(
+                        db=db,
+                        source_item_id=s_item.id,
+                        source_id=source.id,
+                        source_trust=source.trust_score,
+                        validation_result=val_result,
+                        ai_confidence=extraction_output.confidence_score,
+                        flyer_url=flyer_url_candidate
+                    )
+
+                    s_item.status = "processed"
+                    if is_new:
+                        published_count += 1
+                    else:
+                        updated_count += 1
+
+                    logger.info(f"Crawled item {s_item.id} -> Opportunity: {opp.title} (New={is_new})")
+
+                except Exception as proc_err:
+                    logger.error(f"Extraction pipeline failed for item {s_item.id}: {proc_err}")
+                    s_item.status = "error"
+
+            # 5. Update Source Health & Telemetry Metrics
+            source.last_checked_at = datetime.now(timezone.utc)
+            source.last_success_at = datetime.now(timezone.utc)
+            source.consecutive_failures = 0
+            source.status = "active"
+            SourceRateLimiter.record_success(source_id)
+
+            # 6. Finalize IngestionRun Record
+            run.status = "success"
+            run.completed_at = datetime.now(timezone.utc)
+            run.items_found = discovered_count
+            run.items_processed = saved_count
+            run.items_duplicated = dup_count
+            await db.commit()
+
+            return {
+                "source_id": source_id,
+                "source_name": source.name,
+                "status": "success",
+                "items_found": discovered_count,
+                "items_saved": saved_count,
+                "items_published": published_count,
+                "items_updated": updated_count,
+                "items_duplicated": dup_count
+            }
+
+        except Exception as e:
+            logger.error(f"Ingestion failed for source {source.name} ({source_id}): {e}")
+            backoff = SourceRateLimiter.record_failure(source_id)
+            source.consecutive_failures += 1
+            source.last_failure_at = datetime.now(timezone.utc)
+            if source.consecutive_failures >= 3:
+                source.status = "warning"
+            if source.consecutive_failures >= 5:
+                source.status = "failing"
+
+            run.status = "failed"
+            run.completed_at = datetime.now(timezone.utc)
+            run.error_message = str(e)
+
+            err_log = IngestionError(
+                source_id=source.id,
+                task_name="execute_source_crawl",
+                error_type=type(e).__name__,
+                message=str(e)
+            )
+            db.add(err_log)
+            await db.commit()
+
+            return {
+                "source_id": source_id,
+                "source_name": source.name,
+                "status": "failed",
+                "error": str(e),
+                "backoff_recommended_sec": backoff
+            }
+
+    finally:
+        if owns_session and session_ctx:
+            await session_ctx.__aexit__(None, None, None)
+
+
+async def check_and_run_due_sources() -> List[Dict[str, Any]]:
+    """
+    Checks all active monitored sources and automatically triggers crawls
+    for sources that have reached their scheduled crawl frequency.
+    """
+    results: List[Dict[str, Any]] = []
+    async with AsyncSessionLocal() as db:
+        stmt = select(Source).where(Source.is_active.is_(True))
+        res = await db.execute(stmt)
+        sources = res.scalars().all()
+
+        now = datetime.now(timezone.utc)
+        for s in sources:
+            # Skip webhook receivers and curator dropboxes (they receive push data, not polled by web crawler)
+            if (s.source_type and s.source_type.lower() in ["webhook", "curator"]) or \
+               (s.parser_key and any(k in s.parser_key.lower() for k in ["webhook", "curator"])):
+                continue
+
+            is_due = False
+            if s.last_checked_at is None:
+                is_due = True
+            else:
+                last_checked = s.last_checked_at
+                if last_checked.tzinfo is None:
+                    last_checked = last_checked.replace(tzinfo=timezone.utc)
+                elapsed_sec = (now - last_checked).total_seconds()
+                if elapsed_sec >= (s.crawl_frequency or 3600):
+                    is_due = True
+
+            if is_due:
+                logger.info(f"Source {s.name} ({s.id}) is due for crawl. Triggering crawl now...")
+                try:
+                    crawl_res = await execute_source_crawl(s.id, db=db)
+                    results.append(crawl_res)
+                except Exception as err:
+                    logger.error(f"Failed to crawl due source {s.id}: {err}")
+                    results.append({"source_id": s.id, "status": "failed", "error": str(err)})
+
+    return results
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=30)
+def fetch_source_task(self, source_id: str):
+    """
+    Celery task wrapper for source crawl.
+    """
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            return loop.create_task(execute_source_crawl(source_id))
+        else:
+            return loop.run_until_complete(execute_source_crawl(source_id))
+    except RuntimeError:
+        return asyncio.run(execute_source_crawl(source_id))
+
+
+@celery.task
+def scheduled_crawler_task():
+    """
+    Periodic Celery Beat task to check and run due sources.
+    """
+    try:
+        return asyncio.run(check_and_run_due_sources())
+    except Exception as e:
+        logger.error(f"Error in scheduled_crawler_task: {e}")
+        return []
+
+
+@celery.task
+def source_health_check_task():
+    """Periodic health inspection of active sources."""
+    async def _async_run():
+        async with AsyncSessionLocal() as db:
+            stmt = select(Source).where(Source.is_active.is_(True))
+            res = await db.execute(stmt)
+            sources = res.scalars().all()
+            for s in sources:
+                logger.info(f"Health audit for source {s.name} ({s.id}): Status={s.status}, Failures={s.consecutive_failures}")
+    try:
+        asyncio.run(_async_run())
+    except Exception as e:
+        logger.error(f"Error in source_health_check_task: {e}")

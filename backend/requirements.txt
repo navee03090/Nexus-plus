@@ -1,0 +1,49 @@
+# ============================================================
+# NEXUS PULSE Backend Dependencies
+# Python 3.12+
+# ============================================================
+
+# Web framework & ASGI server
+fastapi>=0.115.0
+uvicorn[standard]>=0.31.0
+python-multipart>=0.0.12
+
+# Validation & settings
+pydantic>=2.9.0
+pydantic-settings>=2.5.0
+email-validator>=2.2.0
+
+# Database & ORM
+sqlalchemy>=2.0.35
+asyncpg>=0.29.0
+aiosqlite>=0.20.0
+greenlet>=3.1.0
+
+# Background jobs & Caching
+celery>=5.4.0
+redis>=5.1.0
+fakeredis>=2.25.0
+
+# Ingestion, HTTP, Scraping & Parsers
+httpx>=0.27.0
+beautifulsoup4>=4.12.3
+lxml>=5.3.0
+feedparser>=6.0.11
+pypdf>=5.0.0
+python-dateutil>=2.9.0
+pytz>=2024.2
+
+# Vision, OCR & QR Decoding
+pillow>=10.4.0
+opencv-python-headless>=4.10.0.84
+numpy>=1.26.0
+
+# AI Provider
+google-genai>=1.0.0
+groq>=0.11.0
+
+# Testing & Quality
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+pytest-mock>=3.14.0
+ruff>=0.6.0
