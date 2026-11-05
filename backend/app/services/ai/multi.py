@@ -237,7 +237,9 @@ class MultiAIProvider(AIProvider):
         return await self.gemini.detect_changes(old_data, new_data)
 
     async def generate_embedding(self, text: str) -> List[float]:
-        """Generates embedding using Gemini vector endpoint or deterministic embedding fallback."""
+        """Generates embedding using local deterministic vector generator or Gemini vector endpoint."""
+        if self.provider_preference == "local" or (self.local.is_configured and not self.gemini.has_valid_api_key):
+            return await self.local.generate_embedding(text)
         return await self.gemini.generate_embedding(text)
 
     def get_diagnostics(self) -> Dict[str, Any]:

@@ -240,8 +240,19 @@ async def trigger_source_crawl(
     """Dispatches on-demand crawl task for a source."""
     source = await db.get(Source, source_id)
     if not source:
-        # Flexible match by parser_key, slug, or name prefix
-        clean_key = source_id.replace("src-", "").replace("-01", "").replace("-web", "")
+        # Flexible match by known alias, parser_key, slug, or name prefix
+        alias_map = {
+            "src-02": "kpitb",
+            "src-uet-01": "uet",
+            "src-nccs-01": "nccs",
+            "src-soc-01": "kpitb",
+            "src-soc-02": "nic",
+            "src-soc-03": "nic",
+            "src-04": "giki",
+            "src-05": "hec",
+            "src-06": "fast",
+        }
+        clean_key = alias_map.get(source_id, source_id.replace("src-", "").replace("-01", "").replace("-web", ""))
         stmt = select(Source).where(
             (Source.id == source_id) |
             (Source.parser_key.contains(clean_key)) |

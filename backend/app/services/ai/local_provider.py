@@ -181,6 +181,10 @@ class LocalAIProvider(AIProvider):
                 clean_content = re.sub(r"\s*```$", "", clean_content, flags=re.MULTILINE).strip()
 
                 parsed_dict = json.loads(clean_content)
+                if isinstance(parsed_dict, dict):
+                    for list_key in ["tags", "target_audience", "eligibility", "requirements", "evidence"]:
+                        if parsed_dict.get(list_key) is None:
+                            parsed_dict[list_key] = []
                 extracted = GeminiExtractionOutput.model_validate(parsed_dict)
                 self.last_used_model = f"local/{self.model}"
                 logger.info(f"[LocalAI] Successfully extracted opportunity using local model={self.model}")
