@@ -1,5 +1,7 @@
 import { Opportunity, Category, Organization, Source, VerificationItem } from "@/types";
 
+export const API_BASE = "https://nexus-pulse-api-ult5.onrender.com/api/v1";
+
 export function getBase(): string {
   if (typeof window !== "undefined") {
     const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
@@ -43,7 +45,7 @@ export async function fetchOpportunities(params?: {
 
 export async function fetchOpportunityBySlug(slug: string): Promise<Opportunity | null> {
   try {
-    const res = await fetch(`${API_BASE}/events/${slug}`, { cache: "no-store" });
+    const res = await fetch(`${getBase()}/events/${slug}`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       return json.data;
@@ -56,7 +58,7 @@ export async function fetchOpportunityBySlug(slug: string): Promise<Opportunity 
 
 export async function searchOpportunities(q: string): Promise<Opportunity[]> {
   try {
-    const res = await fetch(`${API_BASE}/events/search?q=${encodeURIComponent(q)}`, { cache: "no-store" });
+    const res = await fetch(`${getBase()}/events/search?q=${encodeURIComponent(q)}`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       return json.data;
@@ -72,7 +74,7 @@ export async function searchOpportunities(q: string): Promise<Opportunity[]> {
 
 export async function fetchRecommended(): Promise<Opportunity[]> {
   try {
-    const res = await fetch(`${API_BASE}/events/recommended`, { cache: "no-store" });
+    const res = await fetch(`${getBase()}/events/recommended`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       if (json.data && json.data.length > 0) return json.data;
@@ -85,7 +87,7 @@ export async function fetchRecommended(): Promise<Opportunity[]> {
 
 export async function fetchCategories(): Promise<Category[]> {
   try {
-    const res = await fetch(`${API_BASE}/categories`, { cache: "no-store" });
+    const res = await fetch(`${getBase()}/categories`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       return json.data;
@@ -103,7 +105,7 @@ export async function fetchCategories(): Promise<Category[]> {
 
 export async function fetchAdminStats() {
   try {
-    const res = await fetch(`${API_BASE}/admin/stats`, { cache: "no-store" });
+    const res = await fetch(`${getBase()}/admin/stats`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       return json.data;
@@ -124,7 +126,7 @@ export async function fetchAdminStats() {
 
 export async function fetchVerificationQueue(): Promise<VerificationItem[]> {
   try {
-    const res = await fetch(`${API_BASE}/admin/review`, { cache: "no-store" });
+    const res = await fetch(`${getBase()}/admin/review`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       return json.data || [];
@@ -135,7 +137,7 @@ export async function fetchVerificationQueue(): Promise<VerificationItem[]> {
 
 export async function approveVerificationItem(queueId: string): Promise<{ success: boolean }> {
   try {
-    const res = await fetch(`${API_BASE}/admin/review/${queueId}/approve`, {
+    const res = await fetch(`${getBase()}/admin/review/${queueId}/approve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
@@ -148,7 +150,7 @@ export async function approveVerificationItem(queueId: string): Promise<{ succes
 
 export async function rejectVerificationItem(queueId: string, reason?: string): Promise<{ success: boolean }> {
   try {
-    const res = await fetch(`${API_BASE}/admin/review/${queueId}/reject`, {
+    const res = await fetch(`${getBase()}/admin/review/${queueId}/reject`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reason: reason || "Rejected by admin" }),
@@ -161,7 +163,7 @@ export async function rejectVerificationItem(queueId: string, reason?: string): 
 }
 
 export async function testSourceCrawl(url: string, sourceType: string, parserKey: string) {
-  const res = await fetch(`${API_BASE}/admin/sources/test`, {
+  const res = await fetch(`${getBase()}/admin/sources/test`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url, source_type: sourceType, parser_key: parserKey }),
@@ -171,7 +173,7 @@ export async function testSourceCrawl(url: string, sourceType: string, parserKey
 
 export async function saveOpportunity(id: string): Promise<{ saved: boolean }> {
   try {
-    const res = await fetch(`${API_BASE}/events/${id}/save`, {
+    const res = await fetch(`${getBase()}/events/${id}/save`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
@@ -189,7 +191,7 @@ export async function reportOpportunity(
   details: string
 ): Promise<{ success: boolean }> {
   try {
-    const res = await fetch(`${API_BASE}/events/${id}/report`, {
+    const res = await fetch(`${getBase()}/events/${id}/report`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ report_type: reportType, details }),
@@ -203,7 +205,7 @@ export async function reportOpportunity(
 
 export async function fetchSavedOpportunities(): Promise<Opportunity[]> {
   try {
-    const res = await fetch(`${API_BASE}/saved`, { cache: "no-store" });
+    const res = await fetch(`${getBase()}/saved`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       if (json.data) return json.data;
@@ -238,7 +240,7 @@ export interface CuratorResult {
 
 export async function curateOpportunity(formData: FormData): Promise<{ success: boolean; data?: CuratorResult; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/ingestion/curator`, {
+    const res = await fetch(`${getBase()}/ingestion/curator`, {
       method: "POST",
       body: formData,
     });
@@ -254,7 +256,7 @@ export async function curateOpportunity(formData: FormData): Promise<{ success: 
 
 export async function triggerSourceCrawl(sourceId: string): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/admin/sources/${sourceId}/crawl`, {
+    const res = await fetch(`${getBase()}/admin/sources/${sourceId}/crawl`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
@@ -278,7 +280,7 @@ export async function createAdminSource(payload: {
   trust_score: number;
 }): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/admin/sources`, {
+    const res = await fetch(`${getBase()}/admin/sources`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -299,7 +301,7 @@ export async function triggerApifyScrape(
 ): Promise<{ success: boolean; data?: any; error?: string; run_id?: string; message?: string }> {
   try {
     const res = await fetch(
-      `${API_BASE}/ingestion/social/apify/trigger?target_url=${encodeURIComponent(targetUrl)}&platform=${platform}`,
+      `${getBase()}/ingestion/social/apify/trigger?target_url=${encodeURIComponent(targetUrl)}&platform=${platform}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -319,7 +321,7 @@ export async function checkApifyRunStatus(
   runId: string
 ): Promise<{ success: boolean; status?: string; error?: string; default_dataset_id?: string }> {
   try {
-    const res = await fetch(`${API_BASE}/ingestion/social/apify/run-status?run_id=${encodeURIComponent(runId)}`);
+    const res = await fetch(`${getBase()}/ingestion/social/apify/run-status?run_id=${encodeURIComponent(runId)}`);
     const json = await res.json();
     return json;
   } catch (err: any) {
@@ -329,7 +331,7 @@ export async function checkApifyRunStatus(
 
 export async function fetchSources(): Promise<any[]> {
   try {
-    const res = await fetch(`${API_BASE}/sources`);
+    const res = await fetch(`${getBase()}/sources`);
     if (!res.ok) return [];
     const json = await res.json();
     return json.data || [];
@@ -344,7 +346,7 @@ export async function syncApifyRun(
 ): Promise<{ success: boolean; status?: string; message?: string; error?: string; opportunities_published?: number; opportunities_updated?: number }> {
   try {
     const res = await fetch(
-      `${API_BASE}/ingestion/social/apify/sync-run?run_id=${encodeURIComponent(runId)}&platform=${platform}`,
+      `${getBase()}/ingestion/social/apify/sync-run?run_id=${encodeURIComponent(runId)}&platform=${platform}`,
       { method: "POST" }
     );
     const json = await res.json();

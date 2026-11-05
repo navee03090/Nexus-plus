@@ -183,8 +183,12 @@ const APIFY_PRESETS = [
 export default function SourcesPage() {
   const [sources, setSources] = useState(MONITORED_SOURCES);
   const [filterCategory, setFilterCategory] = useState<"all" | "web" | "social">("all");
+  const [origin, setOrigin] = useState("https://nexus-plus-gilt.vercel.app");
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
     fetchSources().then((backendSources) => {
       if (backendSources && backendSources.length > 0) {
         const mapped = backendSources.map((bs: any) => ({
@@ -452,15 +456,15 @@ export default function SourcesPage() {
               <div className="flex items-center justify-between text-slate-400 mb-1">
                 <span className="text-[11px] uppercase tracking-wider font-sans font-semibold">Callback URL</span>
                 <button
-                  onClick={() => copyToClipboard(`${typeof window !== 'undefined' ? window.location.origin : 'https://api.nexus-pulse.org'}/api/v1/ingestion/social/meta`, "meta_url")}
+                  onClick={() => copyToClipboard(`${origin}/api/v1/ingestion/social/meta`, "meta_url")}
                   className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-sans"
                 >
                   {copiedItem === "meta_url" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                   <span>{copiedItem === "meta_url" ? "Copied" : "Copy"}</span>
                 </button>
               </div>
-              <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-200 truncate">
-                {typeof window !== 'undefined' ? window.location.origin : 'https://api.nexus-pulse.org'}/api/v1/ingestion/social/meta
+              <div suppressHydrationWarning className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-200 truncate">
+                {origin}/api/v1/ingestion/social/meta
               </div>
             </div>
 
