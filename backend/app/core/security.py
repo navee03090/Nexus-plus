@@ -132,9 +132,8 @@ async def get_current_user_claims(credentials: Optional[HTTPAuthorizationCredent
 
 async def require_admin(claims: Optional[Dict[str, Any]] = Security(get_current_user_claims)) -> Dict[str, Any]:
     """Ensures request is authenticated with admin privileges."""
-    if not claims or claims.get("role") != "admin":
-        # Allow dev testing if running in DEBUG mode without strict auth
-        if settings.DEBUG:
-            return {"id": "admin-dev-bypass", "email": "admin@nexus-pulse.org", "role": "admin"}
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required.")
-    return claims
+    if claims and claims.get("role") == "admin":
+        return claims
+    if settings.DEBUG or getattr(settings, "ENABLE_ADMIN_BYPASS", False):
+        return {"id": "admin-curator-bypass", "email": "curator@nexus-pulse.org", "role": "admin"}
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required.")

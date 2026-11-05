@@ -319,6 +319,17 @@ export async function checkApifyRunStatus(
   }
 }
 
+export async function fetchSources(): Promise<any[]> {
+  try {
+    const res = await fetch(`${API_BASE}/sources`);
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  } catch {
+    return [];
+  }
+}
+
 export async function syncApifyRun(
   runId: string,
   platform: "Facebook" | "Instagram" = "Facebook"

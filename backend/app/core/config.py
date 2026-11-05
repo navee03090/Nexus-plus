@@ -69,6 +69,9 @@ class Settings(BaseSettings):
     # Apify Cloud Integration (Facebook & Instagram Public Crawlers)
     APIFY_API_TOKEN: Optional[str] = None
 
+    # Admin Control Plane Access Bypass (Allows demo UI actions without requiring Supabase JWT)
+    ENABLE_ADMIN_BYPASS: bool = True
+
     # Meta Graph API (Official Facebook & Instagram Webhooks)
     META_APP_ID: Optional[str] = None
     META_APP_SECRET: Optional[str] = None

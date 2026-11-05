@@ -379,12 +379,21 @@ async def apify_webhook_receiver(
 async def trigger_apify_scrape(
     target_url: str = Query(..., description="Target Facebook page or Instagram profile URL"),
     platform: str = Query("Facebook", description="Facebook or Instagram"),
+    apify_token: Optional[str] = Query(None, description="Optional Apify API Token"),
     admin_claims: Dict[str, Any] = Depends(require_admin)
 ):
     """
     On-demand trigger that starts an Apify Actor run for a specific target.
     """
-    client = ApifyClient()
+    token = apify_token or settings.APIFY_API_TOKEN
+    client = ApifyClient(api_token=token)
+
+    if not client.api_token:
+        return {
+            "success": False,
+            "error": "APIFY_API_TOKEN is not configured on Render.",
+            "hint": "Please add APIFY_API_TOKEN in your Render Environment Variables (free account at console.apify.com/account/integrations)."
+        }
 
     if platform.lower() == "instagram":
         # Apify Instagram Scraper Actor
@@ -422,12 +431,14 @@ async def trigger_apify_scrape(
 @router.get("/apify/run-status")
 async def get_apify_run_status(
     run_id: str = Query(..., description="The Apify Actor Run ID"),
+    apify_token: Optional[str] = Query(None, description="Optional Apify API Token"),
     admin_claims: Dict[str, Any] = Depends(require_admin)
 ):
     """
     Checks the status and progress of an active or finished Apify Actor run.
     """
-    client = ApifyClient()
+    token = apify_token or settings.APIFY_API_TOKEN
+    client = ApifyClient(api_token=token)
     try:
         data = await client.get_run_status(run_id)
         return {

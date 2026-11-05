@@ -240,14 +240,25 @@ async def trigger_source_crawl(
     """Dispatches on-demand crawl task for a source."""
     source = await db.get(Source, source_id)
     if not source:
-        raise HTTPException(status_code=404, detail="Source not found")
+        # Flexible match by parser_key, slug, or name prefix
+        clean_key = source_id.replace("src-", "").replace("-01", "").replace("-web", "")
+        stmt = select(Source).where(
+            (Source.id == source_id) |
+            (Source.parser_key.contains(clean_key)) |
+            (Source.name.ilike(f"%{clean_key}%")) |
+            (Source.url.ilike(f"%{clean_key}%"))
+        )
+        source = (await db.execute(stmt)).scalars().first()
+
+    if not source:
+        raise HTTPException(status_code=404, detail=f"Source '{source_id}' not found")
 
     from app.tasks.ingestion import execute_source_crawl
     try:
-        res = await execute_source_crawl(source_id, db=db)
+        res = await execute_source_crawl(source.id, db=db)
         return {"data": res}
     except Exception as e:
-        return {"data": {"source_id": source_id, "status": "failed", "error": str(e)}}
+        return {"data": {"source_id": source.id, "status": "failed", "error": str(e)}}
 
 
 @router.get("/ingestion/runs")

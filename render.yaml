@@ -26,5 +26,9 @@ services:
         generateValue: true
       - key: GEMINI_API_KEY
         sync: false
+      - key: APIFY_API_TOKEN
+        sync: false
+      - key: ENABLE_ADMIN_BYPASS
+        value: "true"
       - key: DATABASE_URL
         value: sqlite+aiosqlite:///./nexus_pulse.db

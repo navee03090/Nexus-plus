@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Radio, 
   Play, 
@@ -22,7 +22,7 @@ import {
   Layers,
   Zap
 } from "lucide-react";
-import { testSourceCrawl, triggerSourceCrawl, createAdminSource, triggerApifyScrape, syncApifyRun, checkApifyRunStatus } from "@/lib/api";
+import { testSourceCrawl, triggerSourceCrawl, createAdminSource, triggerApifyScrape, syncApifyRun, checkApifyRunStatus, fetchSources } from "@/lib/api";
 
 const MONITORED_SOURCES = [
   {
@@ -183,6 +183,26 @@ const APIFY_PRESETS = [
 export default function SourcesPage() {
   const [sources, setSources] = useState(MONITORED_SOURCES);
   const [filterCategory, setFilterCategory] = useState<"all" | "web" | "social">("all");
+
+  useEffect(() => {
+    fetchSources().then((backendSources) => {
+      if (backendSources && backendSources.length > 0) {
+        const mapped = backendSources.map((bs: any) => ({
+          id: bs.id,
+          name: bs.name,
+          platform: bs.platform || "Portal",
+          category: (bs.source_type || "").toLowerCase() === "social" ? "social" : "web",
+          url: bs.url,
+          parser_key: bs.parser_key || "generic",
+          crawl_frequency: bs.crawl_frequency || 3600,
+          trust_score: bs.trust_score || 0.95,
+          status: bs.status || "active",
+          last_checked_at: bs.last_checked_at ? new Date(bs.last_checked_at).toLocaleTimeString() : "Pending crawl",
+        }));
+        setSources(mapped);
+      }
+    });
+  }, []);
   
   // Simulator modal state
   const [simulatorOpen, setSimulatorOpen] = useState(false);
