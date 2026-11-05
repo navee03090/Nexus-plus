@@ -1,6 +1,14 @@
 import { Opportunity, Category, Organization, Source, VerificationItem } from "@/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://nexus-pulse-api-ult5.onrender.com/api/v1";
+export function getBase(): string {
+  if (typeof window !== "undefined") {
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (isLocal) {
+      return process.env.NEXT_PUBLIC_LOCAL_API_URL || "http://localhost:8000/api/v1";
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "https://nexus-pulse-api-ult5.onrender.com/api/v1";
+}
 
 const FALLBACK_OPPORTUNITIES: Opportunity[] = [];
 
@@ -14,7 +22,7 @@ export async function fetchOpportunities(params?: {
   limit?: number;
 }): Promise<Opportunity[]> {
   try {
-    const url = new URL(`${API_BASE}/events`);
+    const url = new URL(`${getBase()}/events`);
     if (params?.category) url.searchParams.set("category", params.category);
     if (params?.city) url.searchParams.set("city", params.city);
     if (params?.is_online !== undefined) url.searchParams.set("is_online", String(params.is_online));
