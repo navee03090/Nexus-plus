@@ -462,12 +462,14 @@ async def get_apify_run_status(
 async def sync_apify_run(
     run_id: str = Query(..., description="The Apify Actor Run ID"),
     platform: str = Query("Facebook", description="Facebook or Instagram"),
+    limit: int = Query(3, le=20, description="Max items to process"),
     admin_claims: Dict[str, Any] = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Directly pulls scraped posts from a finished Apify run dataset,
-    normalizes them, runs Gemini multimodal extraction, and commits to opportunities.
+    normalizes them, runs AI multimodal extraction, and commits to opportunities.
+    Processes in memory first to prevent SQLite database locking.
     """
     client = ApifyClient()
     try:
@@ -484,13 +486,10 @@ async def sync_apify_run(
         if not dataset_id:
             return {"success": False, "message": "No dataset found for this run."}
 
-        items = await client.fetch_dataset_items(dataset_id, limit=20)
+        items = await client.fetch_dataset_items(dataset_id, limit=limit)
         if not items:
             return {"success": True, "message": "Run succeeded but no posts were found on the page.", "items_count": 0}
 
-        # Reuse webhook processing logic
-        fake_req = Request(scope={"type": "http", "method": "POST", "path": "/api/v1/ingestion/social/apify", "headers": []})
-        # Directly process items via existing receiver logic
         parser_key = f"apify_{platform.lower()}_crawler"
         source_stmt = select(Source).where(Source.parser_key == parser_key)
         source = (await db.execute(source_stmt)).scalars().first()
@@ -507,7 +506,7 @@ async def sync_apify_run(
                 is_active=True
             )
             db.add(source)
-            await db.flush()
+            await db.commit()
 
         published_count = 0
         updated_count = 0
@@ -531,55 +530,57 @@ async def sync_apify_run(
                 dup_count += 1
                 continue
 
-            s_item = SourceItem(
-                id=str(uuid.uuid4()),
-                source_id=source.id,
-                external_id=evidence.external_id,
-                canonical_url=evidence.canonical_url,
-                content_hash=evidence.content_hash,
-                title_raw=evidence.title_raw,
-                caption_raw=evidence.caption_raw,
-                body_raw=evidence.body_raw,
-                published_at=evidence.published_at,
-                content_type=evidence.content_type,
-                status="processing"
-            )
-            db.add(s_item)
-            await db.flush()
-
-            for m in evidence.media_items:
-                s_media = SourceMedia(
-                    id=str(uuid.uuid4()),
-                    source_item_id=s_item.id,
-                    media_type=m.media_type,
-                    original_url=m.url,
-                    mime_type="image/jpeg"
-                )
-                db.add(s_media)
-            await db.flush()
-
+            # Run AI extraction in memory FIRST (No database write lock held!)
             try:
                 pipeline = ExtractionPipeline()
                 extraction_output, val_result, qr_codes, ocr_text = await pipeline.process_raw_evidence(evidence)
 
+                s_item_id = str(uuid.uuid4())
+                s_item = SourceItem(
+                    id=s_item_id,
+                    source_id=source.id,
+                    external_id=evidence.external_id,
+                    canonical_url=evidence.canonical_url,
+                    content_hash=evidence.content_hash,
+                    title_raw=evidence.title_raw,
+                    caption_raw=evidence.caption_raw,
+                    body_raw=evidence.body_raw,
+                    published_at=evidence.published_at,
+                    content_type=evidence.content_type,
+                    status="processed"
+                )
+                db.add(s_item)
+
+                for m in evidence.media_items:
+                    s_media = SourceMedia(
+                        id=str(uuid.uuid4()),
+                        source_item_id=s_item_id,
+                        media_type=m.media_type,
+                        original_url=m.url,
+                        mime_type="image/jpeg"
+                    )
+                    db.add(s_media)
+
                 flyer_url = evidence.media_items[0].url if evidence.media_items else None
                 opp, is_new, changes = await OpportunityResolver.resolve(
                     db=db,
-                    source_item_id=s_item.id,
+                    source_item_id=s_item_id,
                     source_id=source.id,
                     source_trust=source.trust_score,
                     validation_result=val_result,
                     ai_confidence=extraction_output.confidence_score,
                     flyer_url=flyer_url
                 )
-                s_item.status = "processed"
                 if is_new:
                     published_count += 1
                 else:
                     updated_count += 1
+
+                # Commit immediately to release lock
+                await db.commit()
+
             except Exception as err:
                 logger.error(f"Error processing Apify item: {err}")
-                s_item.status = "error"
 
         source.last_checked_at = datetime.now(timezone.utc)
         source.last_success_at = datetime.now(timezone.utc)

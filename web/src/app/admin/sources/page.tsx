@@ -183,9 +183,11 @@ const APIFY_PRESETS = [
 export default function SourcesPage() {
   const [sources, setSources] = useState(MONITORED_SOURCES);
   const [filterCategory, setFilterCategory] = useState<"all" | "web" | "social">("all");
-  const [origin, setOrigin] = useState("https://nexus-plus-gilt.vercel.app");
+  const [origin, setOrigin] = useState("http://localhost:3000");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (typeof window !== "undefined") {
       setOrigin(window.location.origin);
     }
@@ -463,8 +465,8 @@ export default function SourcesPage() {
                   <span>{copiedItem === "meta_url" ? "Copied" : "Copy"}</span>
                 </button>
               </div>
-              <div suppressHydrationWarning className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-200 truncate">
-                {origin}/api/v1/ingestion/social/meta
+              <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-200 truncate font-mono">
+                {mounted ? `${origin}/api/v1/ingestion/social/meta` : "http://localhost:3000/api/v1/ingestion/social/meta"}
               </div>
             </div>
 

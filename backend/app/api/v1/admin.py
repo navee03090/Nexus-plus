@@ -127,6 +127,7 @@ async def approve_queue_item(
         opp.status = "published"
         opp.verification_status = "human_verified"
         opp.trust_score = 0.99
+        opp.published_at = datetime.now(timezone.utc)
 
     q_item.status = "approved"
     q_item.reviewed_at = datetime.now(timezone.utc)

@@ -89,46 +89,41 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
                     dup_count += 1
                     continue
 
-                # 4a. Store new raw evidence item
-                s_item = SourceItem(
-                    id=str(uuid.uuid4()),
-                    source_id=source.id,
-                    external_id=item.external_id,
-                    canonical_url=item.canonical_url,
-                    content_hash=content_hash,
-                    title_raw=item.title_raw,
-                    caption_raw=item.caption_raw,
-                    body_raw=item.body_raw,
-                    published_at=item.published_at,
-                    raw_payload=item.raw_payload,
-                    content_type=item.content_type,
-                    status="processing"
-                )
-                db.add(s_item)
-                await db.flush()
-
-                # 4b. Save attached media references
-                for m in item.media_items:
-                    s_media = SourceMedia(
-                        id=str(uuid.uuid4()),
-                        source_item_id=s_item.id,
-                        media_type=m.media_type,
-                        original_url=m.url,
-                        mime_type=m.mime_type
-                    )
-                    db.add(s_media)
-                await db.flush()
-                saved_count += 1
-
-                # 4c. Automated Downstream Processing: Multimodal Extraction & Canonical Resolution
+                # 4. Automated Downstream Processing: Extract in memory FIRST (No DB lock held!)
+                s_item_id = str(uuid.uuid4())
                 try:
                     pipeline = ExtractionPipeline()
                     extraction_output, val_result, qr_codes, ocr_text = await pipeline.process_raw_evidence(item)
 
-                    # Save Extraction record
+                    s_item = SourceItem(
+                        id=s_item_id,
+                        source_id=source.id,
+                        external_id=item.external_id,
+                        canonical_url=item.canonical_url,
+                        content_hash=content_hash,
+                        title_raw=item.title_raw,
+                        caption_raw=item.caption_raw,
+                        body_raw=item.body_raw,
+                        published_at=item.published_at,
+                        raw_payload=item.raw_payload,
+                        content_type=item.content_type,
+                        status="processed"
+                    )
+                    db.add(s_item)
+
+                    for m in item.media_items:
+                        s_media = SourceMedia(
+                            id=str(uuid.uuid4()),
+                            source_item_id=s_item_id,
+                            media_type=m.media_type,
+                            original_url=m.url,
+                            mime_type=m.mime_type
+                        )
+                        db.add(s_media)
+
                     extraction_rec = Extraction(
                         id=str(uuid.uuid4()),
-                        source_item_id=s_item.id,
+                        source_item_id=s_item_id,
                         model_name=pipeline.ai_provider.model_name,
                         prompt_version="crawler-v1",
                         raw_response=extraction_output.model_dump(),
@@ -138,7 +133,6 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
                         validation_warnings=val_result.warnings
                     )
                     db.add(extraction_rec)
-                    await db.flush()
 
                     flyer_url_candidate = None
                     for m in item.media_items:
@@ -148,7 +142,7 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
 
                     opp, is_new, changes = await OpportunityResolver.resolve(
                         db=db,
-                        source_item_id=s_item.id,
+                        source_item_id=s_item_id,
                         source_id=source.id,
                         source_trust=source.trust_score,
                         validation_result=val_result,
@@ -156,17 +150,17 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
                         flyer_url=flyer_url_candidate
                     )
 
-                    s_item.status = "processed"
+                    saved_count += 1
                     if is_new:
                         published_count += 1
                     else:
                         updated_count += 1
 
-                    logger.info(f"Crawled item {s_item.id} -> Opportunity: {opp.title} (New={is_new})")
+                    await db.commit()
+                    logger.info(f"Crawled item {s_item_id} -> Opportunity: {opp.title} (New={is_new})")
 
                 except Exception as proc_err:
-                    logger.error(f"Extraction pipeline failed for item {s_item.id}: {proc_err}")
-                    s_item.status = "error"
+                    logger.error(f"Extraction pipeline failed for item {s_item_id}: {proc_err}")
 
             # 5. Update Source Health & Telemetry Metrics
             source.last_checked_at = datetime.now(timezone.utc)
@@ -236,6 +230,7 @@ async def check_and_run_due_sources() -> List[Dict[str, Any]]:
     for sources that have reached their scheduled crawl frequency.
     """
     results: List[Dict[str, Any]] = []
+    due_source_ids: List[str] = []
     async with AsyncSessionLocal() as db:
         stmt = select(Source).where(Source.is_active.is_(True))
         res = await db.execute(stmt)
@@ -243,7 +238,6 @@ async def check_and_run_due_sources() -> List[Dict[str, Any]]:
 
         now = datetime.now(timezone.utc)
         for s in sources:
-            # Skip webhook receivers and curator dropboxes (they receive push data, not polled by web crawler)
             if (s.source_type and s.source_type.lower() in ["webhook", "curator"]) or \
                (s.parser_key and any(k in s.parser_key.lower() for k in ["webhook", "curator"])):
                 continue
@@ -260,13 +254,17 @@ async def check_and_run_due_sources() -> List[Dict[str, Any]]:
                     is_due = True
 
             if is_due:
-                logger.info(f"Source {s.name} ({s.id}) is due for crawl. Triggering crawl now...")
-                try:
-                    crawl_res = await execute_source_crawl(s.id, db=db)
-                    results.append(crawl_res)
-                except Exception as err:
-                    logger.error(f"Failed to crawl due source {s.id}: {err}")
-                    results.append({"source_id": s.id, "status": "failed", "error": str(err)})
+                due_source_ids.append(s.id)
+
+    # Crawl each due source with an independent, non-overlapping session
+    for source_id in due_source_ids:
+        logger.info(f"Source {source_id} is due for crawl. Triggering crawl now...")
+        try:
+            crawl_res = await execute_source_crawl(source_id)
+            results.append(crawl_res)
+        except Exception as err:
+            logger.error(f"Failed to crawl due source {source_id}: {err}")
+            results.append({"source_id": source_id, "status": "failed", "error": str(err)})
 
     return results
 

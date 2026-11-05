@@ -18,7 +18,7 @@ interface OpportunitiesPageProps {
 export const revalidate = 30;
 
 export default async function OpportunitiesPage({ searchParams }: OpportunitiesPageProps) {
-  const { q = "", category = "", city = "", online = "", urgency = "", sort = "deadline" } = searchParams;
+  const { q = "", category = "", city = "", online = "", urgency = "", sort = "newest" } = searchParams;
 
   const [allOpportunities, categories] = await Promise.all([
     fetchOpportunities({
@@ -49,13 +49,18 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
     if (sort === "trust") {
       return (b.trust_score || 0) - (a.trust_score || 0);
     }
-    if (sort === "newest") {
+    if (sort === "deadline") {
+      const hasA = !!a.registration_deadline;
+      const hasB = !!b.registration_deadline;
+      if (hasA && hasB) {
+        return new Date(a.registration_deadline!).getTime() - new Date(b.registration_deadline!).getTime();
+      }
+      if (hasA && !hasB) return -1;
+      if (!hasA && hasB) return 1;
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     }
-    // Default: deadline earliest
-    const dateA = a.registration_deadline ? new Date(a.registration_deadline).getTime() : 9999999999999;
-    const dateB = b.registration_deadline ? new Date(b.registration_deadline).getTime() : 9999999999999;
-    return dateA - dateB;
+    // Default: newest first (so newly approved opportunities appear instantly on top)
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
   const activeFiltersCount = [category, city, online, urgency].filter(Boolean).length;

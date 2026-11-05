@@ -8,6 +8,11 @@ export function getBase(): string {
     if (isLocal) {
       return process.env.NEXT_PUBLIC_LOCAL_API_URL || "http://localhost:8000/api/v1";
     }
+  } else {
+    // Running on Node.js Server in Next.js (SSR / Server Components)
+    if (process.env.NODE_ENV === "development" || process.env.USE_LOCAL_API === "true") {
+      return process.env.NEXT_PUBLIC_LOCAL_API_URL || "http://localhost:8000/api/v1";
+    }
   }
   return process.env.NEXT_PUBLIC_API_URL || "https://nexus-pulse-api-ult5.onrender.com/api/v1";
 }

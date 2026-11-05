@@ -81,7 +81,7 @@ async def list_events(
     city: Optional[str] = Query(None, description="City name (e.g. Peshawar)"),
     is_online: Optional[bool] = Query(None, description="Filter virtual events"),
     status_filter: str = Query("published", description="Status filter"),
-    sort_by: str = Query("deadline", description="deadline, newest, popular"),
+    sort_by: str = Query("newest", description="newest, deadline, popular"),
     page: int = Query(1, ge=1),
     page_size: int = Query(15, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
