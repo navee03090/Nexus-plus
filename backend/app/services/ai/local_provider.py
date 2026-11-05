@@ -49,7 +49,7 @@ class LocalAIProvider(AIProvider):
         self.base_url = raw_base
         self.model = model_name or settings.LOCAL_AI_MODEL or "llama3.2"
         self.api_key = api_key or settings.LOCAL_AI_API_KEY or "not-needed"
-        self.timeout = timeout or settings.LOCAL_AI_TIMEOUT or 60.0
+        self.timeout = timeout or settings.LOCAL_AI_TIMEOUT or 120.0
         self.last_used_model: Optional[str] = None
 
     @property
@@ -66,14 +66,13 @@ class LocalAIProvider(AIProvider):
             return {
                 "success": False,
                 "error": "LOCAL_AI_BASE_URL is not configured.",
-                "hint": "Set LOCAL_AI_BASE_URL (e.g., http://192.168.1.55:11434/v1) in environment variables."
+                "hint": "Set LOCAL_AI_BASE_URL (e.g., http://192.168.18.48:11434/v1) in environment variables."
             }
 
         t0 = time.time()
         try:
             headers = {"Authorization": f"Bearer {self.api_key}"}
             async with httpx.AsyncClient(timeout=10.0) as client:
-                # Try fetching models list
                 models_url = f"{self.base_url}/models"
                 res = await client.get(models_url, headers=headers)
                 latency_ms = round((time.time() - t0) * 1000, 1)
@@ -123,9 +122,28 @@ class LocalAIProvider(AIProvider):
                 raise RuntimeError("LOCAL_AI_BASE_URL is not configured.")
             return self._fallback_deterministic_extraction(raw_text, caption, ocr_text, qr_urls, publication_timestamp)
 
-        schema_json = json.dumps(GeminiExtractionOutput.model_json_schema())
+        json_template = (
+            '{\n'
+            '  "is_opportunity": true,\n'
+            '  "title": "Exact Title",\n'
+            '  "category": "Hackathon | Competition | Workshop | Conference | Scholarship | Internship | Startup Program | Other",\n'
+            '  "description": "1-2 sentence description",\n'
+            '  "organization_name": "Host organization",\n'
+            '  "city": "Peshawar or other city",\n'
+            '  "venue": "Specific venue or Online",\n'
+            '  "start_date": "YYYY-MM-DD or null",\n'
+            '  "end_date": "YYYY-MM-DD or null",\n'
+            '  "registration_deadline": "YYYY-MM-DD or null",\n'
+            '  "registration_url": "URL or null",\n'
+            '  "contact_email": "Email or null",\n'
+            '  "target_audience": ["Students", "Developers"],\n'
+            '  "tags": ["AI", "Software"],\n'
+            '  "confidence_score": 0.95\n'
+            '}'
+        )
+
         user_prompt = (
-            f"You MUST return a JSON object strictly adhering to this schema:\n{schema_json}\n\n"
+            f"You MUST return ONLY a JSON object strictly adhering to this format:\n{json_template}\n\n"
             f"EVIDENCE CONTEXT:\n"
             f"TITLE/TEXT:\n{raw_text}\n\n"
             f"CAPTION:\n{caption or ''}\n\n"

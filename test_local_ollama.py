@@ -40,12 +40,12 @@ def main():
             raw = res.read().decode("utf-8")
             data = json.loads(raw)
             models = [m.get("name") for m in data.get("models", [])]
-            print(f"  ✓ Connected successfully! ({elapsed} ms latency)")
-            print(f"  ✓ Available models on machine: {models}")
+            print(f"  [OK] Connected successfully! ({elapsed} ms latency)")
+            print(f"  [OK] Available models on machine: {models}")
             if not any(model in m for m in models):
-                print(f"  ⚠ Note: '{model}' was not found in the list above. Available: {models}")
+                print(f"  [!] Note: '{model}' was not found in the list above. Available: {models}")
     except Exception as e:
-        print(f"  ❌ Failed to reach Ollama at {base_url}!")
+        print(f"  [FAILED] Failed to reach Ollama at {base_url}!")
         print(f"     Error: {e}")
         print("\n  Troubleshooting Checklist:")
         print(f"  1. On the other machine, did you set OLLAMA_HOST=0.0.0.0:11434 ?")
@@ -92,14 +92,14 @@ def main():
             raw = res.read().decode("utf-8")
             data = json.loads(raw)
             content = data.get("message", {}).get("content", "").strip()
-            print(f"  ✓ Model answered in {elapsed}s!\n")
+            print(f"  [OK] Model answered in {elapsed}s!\n")
             print(f"[3/3] Extracted Output from {model}:")
             print("-------------------------------------------------------")
             print(content)
             print("-------------------------------------------------------")
-            print("\n🎉 SUCCESS: Your local Ollama model is fully ready for NEXUS PULSE!")
+            print("\n[SUCCESS] Your local Ollama model is fully ready for NEXUS PULSE!")
     except Exception as e:
-        print(f"  ❌ Chat generation failed: {e}")
+        print(f"  [FAILED] Chat generation failed: {e}")
 
 if __name__ == "__main__":
     main()
