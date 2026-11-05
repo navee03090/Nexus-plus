@@ -113,19 +113,19 @@ export default async function HomePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
             <div className="p-3">
               <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono">
-                {stats.sources_monitored || 8}+
+                {stats.sources_monitored ?? 0}+
               </div>
               <div className="text-xs text-slate-400 mt-1">Official Sources Monitored</div>
             </div>
             <div className="p-3">
               <div className="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono">
-                {stats.opportunities_published || 12}
+                {stats.opportunities_published ?? 0}
               </div>
               <div className="text-xs text-slate-400 mt-1">Canonical Opportunities</div>
             </div>
             <div className="p-3">
               <div className="text-2xl sm:text-3xl font-extrabold text-indigo-400 font-mono">
-                {stats.duplicates_resolved || 5}
+                {stats.duplicates_resolved ?? 0}
               </div>
               <div className="text-xs text-slate-400 mt-1">Duplicates Merged</div>
             </div>

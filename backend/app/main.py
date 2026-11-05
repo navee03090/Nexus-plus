@@ -61,14 +61,20 @@ async def lifespan(app: FastAPI):
 
         from app.models.opportunity import Opportunity
         cat_count = (await session.execute(select(func.count(Category.id)))).scalar() or 0
-        opp_count = (await session.execute(select(func.count(Opportunity.id)))).scalar() or 0
-        if cat_count == 0 or opp_count == 0:
-            logger.info("Seeding authentic Pakistani opportunities and taxonomies...")
-            from app.scripts.sync_only_real_data import sync_only_real_data
-            await sync_only_real_data()
-            from app.scripts.add_nccs_challenge import add_nccs_challenge
-            await add_nccs_challenge()
-            logger.info("Authentic opportunities successfully initialized.")
+        if cat_count == 0:
+            logger.info("Initializing baseline taxonomy categories...")
+            for idx, (name, slug, desc, icon) in enumerate([
+                ("Hackathon", "hackathon", "Competitive innovation sprints", "Code2"),
+                ("Competition", "competition", "Skill and challenge contests", "Trophy"),
+                ("Workshop", "workshop", "Hands-on technical bootcamps", "Cpu"),
+                ("Conference", "conference", "Academic research summits", "Presentation"),
+                ("Scholarship", "scholarship", "Financial and tuition scholarships", "Sparkles"),
+                ("Internship", "internship", "Industry job placements", "Briefcase"),
+                ("Startup Program", "startup-program", "Accelerators and incubation", "Rocket"),
+            ], 1):
+                session.add(Category(id=f"cat-{slug}", name=name, slug=slug, description=desc, icon=icon, is_active=True, display_order=idx))
+            await session.commit()
+            logger.info("Baseline taxonomy categories initialized.")
 
     # Start autonomous background crawler task
     crawler_task = asyncio.create_task(periodic_crawler_scheduler())
