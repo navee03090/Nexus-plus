@@ -6,6 +6,7 @@ from typing import Optional
 from app.services.ai.base import AIProvider
 from app.services.ai.gemini import GeminiProvider
 from app.services.ai.groq_provider import GroqProvider
+from app.services.ai.local_provider import LocalAIProvider
 from app.services.ai.multi import MultiAIProvider
 
 _default_ai_provider: Optional[MultiAIProvider] = None
@@ -23,6 +24,7 @@ __all__ = [
     "AIProvider",
     "GeminiProvider",
     "GroqProvider",
+    "LocalAIProvider",
     "MultiAIProvider",
     "get_ai_provider",
 ]

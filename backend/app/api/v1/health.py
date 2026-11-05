@@ -77,3 +77,43 @@ async def detailed_health_check(db: AsyncSession = Depends(get_db)):
         },
         "meta": {"timestamp": time.time()}
     }
+
+
+@router.post("/health/test-local-ai")
+async def test_local_ai_endpoint(
+    base_url: str = "http://localhost:11434/v1",
+    model: str = "qwen2.5:3b",
+):
+    """
+    On-demand connectivity and extraction test for local Ollama / LM Studio runners.
+    """
+    from app.services.ai.local_provider import LocalAIProvider
+    provider = LocalAIProvider(base_url=base_url, model_name=model)
+    conn_result = await provider.test_connection()
+
+    if not conn_result.get("success"):
+        return {"data": conn_result}
+
+    # If connection passed, test sample extraction
+    try:
+        sample_announcement = (
+            "KPITB and Code for Pakistan announce KP Fellowship 2026. "
+            "Registration deadline: 2026-11-20. Event starts: 2026-12-01. "
+            "Venue: Durshal Peshawar. Apply online at: https://kpitb.gov.pk/fellowship"
+        )
+        extracted = await provider.extract_opportunity(raw_text=sample_announcement)
+        return {
+            "data": {
+                "connection": conn_result,
+                "test_extraction": extracted.model_dump(),
+                "status": "operational",
+            }
+        }
+    except Exception as e:
+        return {
+            "data": {
+                "connection": conn_result,
+                "extraction_error": str(e),
+                "status": "connection_ok_extraction_failed",
+            }
+        }

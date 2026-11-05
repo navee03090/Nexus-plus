@@ -9,6 +9,7 @@ from app.services.ai.base import AIProvider
 from app.schemas.opportunity import GeminiExtractionOutput
 from app.services.ai.gemini import GeminiProvider
 from app.services.ai.groq_provider import GroqProvider
+from app.services.ai.local_provider import LocalAIProvider
 from app.core.config import settings
 from app.core.logging import logger
 
@@ -16,7 +17,7 @@ from app.core.logging import logger
 class MultiAIProvider(AIProvider):
     """
     Unified AI Provider with intelligent multi-model routing, key rotation,
-    and automatic failover between Google Gemini and Groq.
+    and automatic failover between Local AI (Ollama/LM Studio), Google Gemini, and Groq.
     """
 
     def __init__(
@@ -24,21 +25,27 @@ class MultiAIProvider(AIProvider):
         provider_preference: Optional[str] = None,
         gemini_provider: Optional[GeminiProvider] = None,
         groq_provider: Optional[GroqProvider] = None,
+        local_provider: Optional[LocalAIProvider] = None,
     ):
         self.provider_preference = (provider_preference or settings.LLM_PROVIDER or "auto").lower()
         self.gemini = gemini_provider or GeminiProvider()
         self.groq = groq_provider or GroqProvider()
+        self.local = local_provider or LocalAIProvider()
 
         self._active_provider: str = self._determine_initial_provider()
         self._last_used_model: Optional[str] = None
 
     def _determine_initial_provider(self) -> str:
         pref = self.provider_preference
+        if pref == "local":
+            return "local"
         if pref == "groq":
             return "groq"
         if pref == "gemini":
             return "gemini"
-        # In auto mode: prefer Gemini if valid keys configured, otherwise Groq
+        # In auto mode: prefer local model if configured, otherwise Gemini, otherwise Groq
+        if self.local.is_configured:
+            return "local"
         if self.gemini.has_valid_api_key:
             return "gemini"
         if self.groq.has_valid_api_key:
@@ -50,6 +57,8 @@ class MultiAIProvider(AIProvider):
         """Returns the active or last successfully used model name."""
         if self._last_used_model:
             return self._last_used_model
+        if self._active_provider == "local":
+            return self.local.model_name
         if self._active_provider == "groq":
             return self.groq.model_name
         return self.gemini.model_name
@@ -72,6 +81,29 @@ class MultiAIProvider(AIProvider):
         Extracts structured opportunity details with automatic cross-provider failover.
         """
         mode = self.provider_preference
+
+        # Mode: Explicit Local (Ollama / LM Studio)
+        if mode == "local":
+            try:
+                res = await self.local.extract_opportunity(
+                    raw_text=raw_text,
+                    caption=caption,
+                    ocr_text=ocr_text,
+                    qr_urls=qr_urls,
+                    image_bytes=image_bytes,
+                    publication_timestamp=publication_timestamp,
+                    source_timezone=source_timezone,
+                    raise_on_exhaustion=False
+                )
+                self._last_used_model = self.local.model_name
+                self._active_provider = "local"
+                return res
+            except Exception as e:
+                logger.error(f"[MultiAIProvider] Local AI failed: {e}. Falling back to deterministic.")
+                self._active_provider = "deterministic_fallback"
+                return self.local._fallback_deterministic_extraction(
+                    raw_text, caption, ocr_text, qr_urls, publication_timestamp
+                )
 
         # Mode: Explicit Gemini
         if mode == "gemini":
@@ -119,8 +151,27 @@ class MultiAIProvider(AIProvider):
                     raw_text, caption, ocr_text, qr_urls, publication_timestamp
                 )
 
-        # Mode: Auto (Gemini primary -> Groq fallback -> Deterministic fallback)
-        # 1. Try Gemini
+        # Mode: Auto (Local Model -> Gemini -> Groq -> Deterministic)
+        # 1. Try Local Model if configured
+        if self.local.is_configured:
+            try:
+                res = await self.local.extract_opportunity(
+                    raw_text=raw_text,
+                    caption=caption,
+                    ocr_text=ocr_text,
+                    qr_urls=qr_urls,
+                    image_bytes=image_bytes,
+                    publication_timestamp=publication_timestamp,
+                    source_timezone=source_timezone,
+                    raise_on_exhaustion=True
+                )
+                self._last_used_model = self.local.model_name
+                self._active_provider = "local"
+                return res
+            except Exception as local_err:
+                logger.warning(f"[MultiAIProvider] Local AI model failed or unreachable: {local_err}. Trying cloud providers...")
+
+        # 2. Try Gemini
         if self.gemini.has_valid_api_key:
             try:
                 res = await self.gemini.extract_opportunity(
@@ -142,7 +193,7 @@ class MultiAIProvider(AIProvider):
                     f"Failing over to Groq provider..."
                 )
 
-        # 2. Try Groq
+        # 3. Try Groq
         if self.groq.has_valid_api_key:
             try:
                 res = await self.groq.extract_opportunity(
@@ -164,7 +215,7 @@ class MultiAIProvider(AIProvider):
                     f"Falling back to high-fidelity deterministic extractor..."
                 )
 
-        # 3. Deterministic rule-based fallback
+        # 4. Deterministic rule-based fallback
         self._active_provider = "deterministic_fallback"
         return self.gemini._fallback_deterministic_extraction(
             raw_text, caption, ocr_text, qr_urls, publication_timestamp
@@ -195,6 +246,12 @@ class MultiAIProvider(AIProvider):
             "mode": self.provider_preference,
             "active_provider": self._active_provider,
             "active_model": self.model_name,
+            "local": {
+                "base_url": self.local.base_url,
+                "configured_model": self.local.model,
+                "is_configured": self.local.is_configured,
+                "last_model": self.local.last_used_model,
+            },
             "gemini": {
                 "configured_models": self.gemini.models,
                 "key_diagnostics": self.gemini.key_rotator.get_status_diagnostics(),

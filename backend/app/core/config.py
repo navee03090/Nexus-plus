@@ -36,12 +36,18 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
 
-    # AI Multimodal Providers (Gemini & Groq with Auto Failover & Key Rotation)
+    # AI Multimodal Providers (Gemini, Groq & Local AI with Auto Failover & Key Rotation)
     LLM_PROVIDER: str = "auto"
     GEMINI_API_KEYS: Optional[str] = None
-    GEMINI_MODELS: Optional[str] = "gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash,gemini-2.5-flash,gemini-flash-lite-latest"
+    GEMINI_MODELS: Optional[str] = "gemini-2.5-flash,gemini-1.5-flash"
     GROQ_API_KEYS: Optional[str] = None
     GROQ_MODELS: Optional[str] = "openai/gpt-oss-120b,openai/gpt-oss-20b"
+
+    # Local AI Model Runner (Ollama, LM Studio, vLLM on another machine or localhost)
+    LOCAL_AI_BASE_URL: Optional[str] = None
+    LOCAL_AI_MODEL: str = "llama3.2"
+    LOCAL_AI_API_KEY: str = "not-needed"
+    LOCAL_AI_TIMEOUT: float = 60.0
 
     # Backward-compatibility defaults
     GEMINI_API_KEY: Optional[str] = None
@@ -89,12 +95,25 @@ class Settings(BaseSettings):
 
     @property
     def gemini_api_keys_list(self) -> List[str]:
-        keys = []
+        raw_keys = []
         if self.GEMINI_API_KEYS:
-            keys.extend([k.strip() for k in self.GEMINI_API_KEYS.split(",") if k.strip()])
-        if self.GEMINI_API_KEY and self.GEMINI_API_KEY not in keys:
-            keys.append(self.GEMINI_API_KEY.strip())
-        return keys
+            raw_keys.extend(self.GEMINI_API_KEYS.split(","))
+        if self.GEMINI_API_KEY:
+            raw_keys.extend(self.GEMINI_API_KEY.split(","))
+
+        cleaned = [k.strip() for k in raw_keys if k and len(k.strip()) > 10]
+        # Prioritize authentic AI Studio keys (start with AIzaSy) and filter invalid OAuth AQ. tokens
+        aiza_keys = [k for k in cleaned if k.startswith("AIzaSy")]
+        other_keys = [k for k in cleaned if not k.startswith("AIzaSy") and not k.startswith("AQ.")]
+
+        combined = aiza_keys + other_keys
+        seen = set()
+        deduped = []
+        for k in combined:
+            if k not in seen:
+                seen.add(k)
+                deduped.append(k)
+        return deduped
 
     @property
     def gemini_models_list(self) -> List[str]:
