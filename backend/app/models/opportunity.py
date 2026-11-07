@@ -2,19 +2,19 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import String, Float, Boolean, Integer, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.core.database import Base
+from app.core.database import Base, GUID
 
 
 class Opportunity(Base):
     __tablename__ = "opportunities"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     slug: Mapped[str] = mapped_column(String(500), unique=True, index=True, nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    organization_id: Mapped[str] = mapped_column(String(36), ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True)
-    category_id: Mapped[str] = mapped_column(String(36), ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
+    organization_id: Mapped[str] = mapped_column(GUID, ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True)
+    category_id: Mapped[str] = mapped_column(GUID, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     venue: Mapped[str] = mapped_column(String(500), nullable=True)
     city: Mapped[str] = mapped_column(String(100), nullable=True)
     country: Mapped[str] = mapped_column(String(100), default="Pakistan")
@@ -52,9 +52,9 @@ class Opportunity(Base):
 class OpportunitySource(Base):
     __tablename__ = "opportunity_sources"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    opportunity_id: Mapped[str] = mapped_column(String(36), ForeignKey("opportunities.id", ondelete="CASCADE"), index=True)
-    source_item_id: Mapped[str] = mapped_column(String(36), ForeignKey("source_items.id", ondelete="CASCADE"), index=True)
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    opportunity_id: Mapped[str] = mapped_column(GUID, ForeignKey("opportunities.id", ondelete="CASCADE"), index=True)
+    source_item_id: Mapped[str] = mapped_column(GUID, ForeignKey("source_items.id", ondelete="CASCADE"), index=True)
     relationship_type: Mapped[str] = mapped_column(String(50), default="original")  # original, confirmation, duplicate, update, registration, reference
     is_primary_source: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -66,12 +66,12 @@ class OpportunitySource(Base):
 class OpportunityChange(Base):
     __tablename__ = "opportunity_changes"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    opportunity_id: Mapped[str] = mapped_column(String(36), ForeignKey("opportunities.id", ondelete="CASCADE"), index=True)
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    opportunity_id: Mapped[str] = mapped_column(GUID, ForeignKey("opportunities.id", ondelete="CASCADE"), index=True)
     field_name: Mapped[str] = mapped_column(String(100), nullable=False)
     old_value: Mapped[str] = mapped_column(Text, nullable=True)
     new_value: Mapped[str] = mapped_column(Text, nullable=True)
-    source_item_id: Mapped[str] = mapped_column(String(36), ForeignKey("source_items.id", ondelete="SET NULL"), nullable=True)
+    source_item_id: Mapped[str] = mapped_column(GUID, ForeignKey("source_items.id", ondelete="SET NULL"), nullable=True)
     detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     change_type: Mapped[str] = mapped_column(String(50), nullable=False)  # deadline_extension, venue_change, date_change, cancelled, postponed
 
@@ -81,8 +81,8 @@ class OpportunityChange(Base):
 class OpportunityEmbedding(Base):
     __tablename__ = "opportunity_embeddings"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    opportunity_id: Mapped[str] = mapped_column(String(36), ForeignKey("opportunities.id", ondelete="CASCADE"), unique=True)
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    opportunity_id: Mapped[str] = mapped_column(GUID, ForeignKey("opportunities.id", ondelete="CASCADE"), unique=True)
     # Stored as JSON list of floats for portability across SQLite and PostgreSQL pgvector
     vector_data: Mapped[list] = mapped_column(JSON, nullable=True)
     model: Mapped[str] = mapped_column(String(100), default="text-embedding-004")

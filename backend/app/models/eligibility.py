@@ -2,14 +2,14 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import String, Boolean, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.core.database import Base
+from app.core.database import Base, GUID
 
 
 class EligibilityRule(Base):
     __tablename__ = "eligibility_rules"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    opportunity_id: Mapped[str] = mapped_column(String(36), ForeignKey("opportunities.id", ondelete="CASCADE"), index=True)
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    opportunity_id: Mapped[str] = mapped_column(GUID, ForeignKey("opportunities.id", ondelete="CASCADE"), index=True)
     rule_type: Mapped[str] = mapped_column(String(100), nullable=False)  # education_level, university, field, location, age
     operator: Mapped[str] = mapped_column(String(50), nullable=False)   # in, equals, contains, gte, lte
     value: Mapped[dict] = mapped_column(JSON, nullable=False)
@@ -23,17 +23,17 @@ class EligibilityRule(Base):
 class UserInterest(Base):
     __tablename__ = "user_interests"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
-    tag_id: Mapped[str] = mapped_column(String(36), ForeignKey("tags.id", ondelete="CASCADE"), index=True)
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(GUID, index=True, nullable=False)
+    tag_id: Mapped[str] = mapped_column(GUID, ForeignKey("tags.id", ondelete="CASCADE"), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class UserPreference(Base):
     __tablename__ = "user_preferences"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(String(36), unique=True, index=True, nullable=False)
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(GUID, unique=True, index=True, nullable=False)
     preferred_cities: Mapped[list] = mapped_column(JSON, default=lambda: ["Peshawar", "Islamabad"])
     preferred_opportunity_types: Mapped[list] = mapped_column(JSON, default=list)
     online_only: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -46,8 +46,8 @@ class UserPreference(Base):
 class SavedOpportunity(Base):
     __tablename__ = "saved_opportunities"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
-    opportunity_id: Mapped[str] = mapped_column(String(36), ForeignKey("opportunities.id", ondelete="CASCADE"), index=True)
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(GUID, index=True, nullable=False)
+    opportunity_id: Mapped[str] = mapped_column(GUID, ForeignKey("opportunities.id", ondelete="CASCADE"), index=True)
     notes: Mapped[str] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

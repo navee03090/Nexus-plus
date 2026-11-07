@@ -2,14 +2,14 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import String, Integer, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
-from app.core.database import Base
+from app.core.database import Base, GUID
 
 
 class Profile(Base):
     __tablename__ = "profiles"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(GUID, unique=True, index=True)
     full_name: Mapped[str] = mapped_column(String(255), nullable=True)
     avatar_url: Mapped[str] = mapped_column(String(1024), nullable=True)
     country: Mapped[str] = mapped_column(String(100), default="Pakistan")

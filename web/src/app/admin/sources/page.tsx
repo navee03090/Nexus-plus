@@ -465,7 +465,7 @@ export default function SourcesPage() {
                   <span>{copiedItem === "meta_url" ? "Copied" : "Copy"}</span>
                 </button>
               </div>
-              <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-200 truncate font-mono">
+              <div suppressHydrationWarning className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-200 truncate font-mono">
                 {mounted ? `${origin}/api/v1/ingestion/social/meta` : "http://localhost:3000/api/v1/ingestion/social/meta"}
               </div>
             </div>

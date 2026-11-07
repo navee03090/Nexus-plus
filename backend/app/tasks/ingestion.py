@@ -106,8 +106,8 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
                         body_raw=item.body_raw,
                         published_at=item.published_at,
                         raw_payload=item.raw_payload,
-                        content_type=item.content_type,
-                        status="processed"
+                        content_type="html" if (item.content_type == "web" or not item.content_type) else item.content_type,
+                        status="extracted"
                     )
                     db.add(s_item)
 

@@ -547,7 +547,7 @@ async def sync_apify_run(
                     body_raw=evidence.body_raw,
                     published_at=evidence.published_at,
                     content_type=evidence.content_type,
-                    status="processed"
+                    status="extracted"
                 )
                 db.add(s_item)
 

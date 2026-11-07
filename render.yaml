@@ -15,7 +15,7 @@ services:
       - key: LLM_PROVIDER
         value: gemini
       - key: GEMINI_MODELS
-        value: gemini-2.5-flash,gemini-1.5-flash
+        value: gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash,gemini-2.5-flash,gemini-flash-lite-latest
       - key: CORS_ORIGINS
         value: "*"
       - key: SUPABASE_URL
@@ -31,4 +31,4 @@ services:
       - key: ENABLE_ADMIN_BYPASS
         value: "true"
       - key: DATABASE_URL
-        value: sqlite+aiosqlite:///./nexus_pulse.db
+        value: postgresql+asyncpg://postgres.ervfizmcgcatlwynupbt:Alphalmg9898%40@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres

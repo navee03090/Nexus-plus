@@ -2,14 +2,14 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import String, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
-from app.core.database import Base
+from app.core.database import Base, GUID
 
 
 class NotificationPreference(Base):
     __tablename__ = "notification_preferences"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(String(36), unique=True, index=True, nullable=False)
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(GUID, unique=True, index=True, nullable=False)
     email_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     telegram_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     telegram_chat_id: Mapped[str] = mapped_column(String(100), nullable=True)
@@ -26,9 +26,9 @@ class NotificationPreference(Base):
 class NotificationDelivery(Base):
     __tablename__ = "notification_deliveries"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
-    opportunity_id: Mapped[str] = mapped_column(String(36), ForeignKey("opportunities.id", ondelete="CASCADE"), index=True)
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(GUID, index=True, nullable=False)
+    opportunity_id: Mapped[str] = mapped_column(GUID, ForeignKey("opportunities.id", ondelete="CASCADE"), index=True)
     notification_type: Mapped[str] = mapped_column(String(50), nullable=False)  # NEW_MATCH, DEADLINE_APPROACHING, OPPORTUNITY_UPDATED, etc.
     channel: Mapped[str] = mapped_column(String(50), nullable=False)  # in_app, email, telegram, push
     scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

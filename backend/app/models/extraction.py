@@ -2,14 +2,14 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import String, Float, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.core.database import Base
+from app.core.database import Base, GUID
 
 
 class Extraction(Base):
     __tablename__ = "extractions"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    source_item_id: Mapped[str] = mapped_column(String(36), ForeignKey("source_items.id", ondelete="CASCADE"), index=True)
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    source_item_id: Mapped[str] = mapped_column(GUID, ForeignKey("source_items.id", ondelete="CASCADE"), index=True)
     model_name: Mapped[str] = mapped_column(String(100), nullable=False)
     prompt_version: Mapped[str] = mapped_column(String(50), nullable=False)
     raw_response: Mapped[dict] = mapped_column(JSON, nullable=True)

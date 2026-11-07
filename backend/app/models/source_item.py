@@ -2,14 +2,14 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import String, Integer, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.core.database import Base
+from app.core.database import Base, GUID
 
 
 class SourceItem(Base):
     __tablename__ = "source_items"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    source_id: Mapped[str] = mapped_column(String(36), ForeignKey("sources.id", ondelete="CASCADE"), index=True)
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    source_id: Mapped[str] = mapped_column(GUID, ForeignKey("sources.id", ondelete="CASCADE"), index=True)
     external_id: Mapped[str] = mapped_column(String(255), nullable=True)
     canonical_url: Mapped[str] = mapped_column(String(2048), nullable=True)
     content_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
@@ -34,8 +34,8 @@ class SourceItem(Base):
 class SourceMedia(Base):
     __tablename__ = "source_media"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    source_item_id: Mapped[str] = mapped_column(String(36), ForeignKey("source_items.id", ondelete="CASCADE"), index=True)
+    id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    source_item_id: Mapped[str] = mapped_column(GUID, ForeignKey("source_items.id", ondelete="CASCADE"), index=True)
     media_type: Mapped[str] = mapped_column(String(50), nullable=False)  # flyer, poster, document, photo
     original_url: Mapped[str] = mapped_column(String(2048), nullable=True)
     storage_path: Mapped[str] = mapped_column(String(1024), nullable=True)

@@ -8,7 +8,31 @@ from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, or_, text
+import uuid
+
+def is_valid_uuid(val: Any) -> bool:
+    if not val:
+        return False
+    try:
+        uuid.UUID(str(val))
+        return True
+    except (ValueError, TypeError, AttributeError):
+        return False
+
+async def get_valid_admin_user_id(db: AsyncSession, admin_claims: Optional[Dict[str, Any]]) -> Optional[str]:
+    if not admin_claims:
+        return None
+    raw_id = admin_claims.get("id")
+    if not is_valid_uuid(raw_id):
+        return None
+    try:
+        res = await db.execute(text("SELECT id FROM auth.users WHERE id = :uid"), {"uid": str(raw_id)})
+        if res.scalar():
+            return str(raw_id)
+    except Exception:
+        pass
+    return None
 
 from app.core.database import get_db
 from app.core.security import require_admin
@@ -118,26 +142,34 @@ async def approve_queue_item(
     admin_claims: Dict[str, Any] = Depends(require_admin)
 ):
     """Human admin verifies and publishes the opportunity."""
+    if not is_valid_uuid(queue_id):
+        raise HTTPException(status_code=404, detail="Queue item not found")
+
     q_item = await db.get(VerificationQueue, queue_id)
     if not q_item:
         raise HTTPException(status_code=404, detail="Queue item not found")
 
-    opp = await db.get(Opportunity, q_item.opportunity_id)
+    opp = None
+    if q_item.opportunity_id and is_valid_uuid(q_item.opportunity_id):
+        opp = await db.get(Opportunity, q_item.opportunity_id)
+
     if opp:
         opp.status = "published"
         opp.verification_status = "human_verified"
         opp.trust_score = 0.99
         opp.published_at = datetime.now(timezone.utc)
+        opp.updated_at = datetime.now(timezone.utc)
 
+    q_admin_id = await get_valid_admin_user_id(db, admin_claims)
     q_item.status = "approved"
     q_item.reviewed_at = datetime.now(timezone.utc)
-    q_item.assigned_admin_id = admin_claims.get("id")
+    q_item.assigned_admin_id = q_admin_id
 
     audit = AuditLog(
-        admin_user_id=admin_claims.get("id"),
+        admin_user_id=q_admin_id,
         action="APPROVE_EVENT",
         entity_type="opportunity",
-        entity_id=opp.id if opp else queue_id,
+        entity_id=str(opp.id) if opp else str(queue_id),
         after_state={"status": "published", "verification_status": "human_verified"}
     )
     db.add(audit)
@@ -153,24 +185,33 @@ async def reject_queue_item(
     admin_claims: Dict[str, Any] = Depends(require_admin)
 ):
     """Admin rejects low-quality or irrelevant announcement."""
+    if not is_valid_uuid(queue_id):
+        raise HTTPException(status_code=404, detail="Queue item not found")
+
     q_item = await db.get(VerificationQueue, queue_id)
     if not q_item:
         raise HTTPException(status_code=404, detail="Queue item not found")
 
-    opp = await db.get(Opportunity, q_item.opportunity_id)
+    opp = None
+    if q_item.opportunity_id and is_valid_uuid(q_item.opportunity_id):
+        opp = await db.get(Opportunity, q_item.opportunity_id)
+
     if opp:
         opp.status = "rejected"
         opp.verification_status = "rejected"
+        opp.updated_at = datetime.now(timezone.utc)
 
+    q_admin_id = await get_valid_admin_user_id(db, admin_claims)
     q_item.status = "rejected"
     q_item.reviewed_at = datetime.now(timezone.utc)
+    q_item.assigned_admin_id = q_admin_id
     q_item.admin_notes = payload.get("reason", "Rejected by admin") if payload else "Rejected"
 
     audit = AuditLog(
-        admin_user_id=admin_claims.get("id"),
+        admin_user_id=q_admin_id,
         action="REJECT_EVENT",
         entity_type="opportunity",
-        entity_id=opp.id if opp else queue_id
+        entity_id=str(opp.id) if opp else str(queue_id)
     )
     db.add(audit)
     await db.commit()
@@ -239,9 +280,12 @@ async def trigger_source_crawl(
     admin_claims: Dict[str, Any] = Depends(require_admin)
 ):
     """Dispatches on-demand crawl task for a source."""
-    source = await db.get(Source, source_id)
+    source = None
+    is_uuid = is_valid_uuid(source_id)
+    if is_uuid:
+        source = await db.get(Source, source_id)
+
     if not source:
-        # Flexible match by known alias, parser_key, slug, or name prefix
         alias_map = {
             "src-02": "kpitb",
             "src-uet-01": "uet",
@@ -254,12 +298,14 @@ async def trigger_source_crawl(
             "src-06": "fast",
         }
         clean_key = alias_map.get(source_id, source_id.replace("src-", "").replace("-01", "").replace("-web", ""))
-        stmt = select(Source).where(
-            (Source.id == source_id) |
-            (Source.parser_key.contains(clean_key)) |
-            (Source.name.ilike(f"%{clean_key}%")) |
+        conditions = [
+            (Source.parser_key.contains(clean_key)),
+            (Source.name.ilike(f"%{clean_key}%")),
             (Source.url.ilike(f"%{clean_key}%"))
-        )
+        ]
+        if is_uuid:
+            conditions.append(Source.id == source_id)
+        stmt = select(Source).where(or_(*conditions))
         source = (await db.execute(stmt)).scalars().first()
 
     if not source:
@@ -267,10 +313,10 @@ async def trigger_source_crawl(
 
     from app.tasks.ingestion import execute_source_crawl
     try:
-        res = await execute_source_crawl(source.id, db=db)
+        res = await execute_source_crawl(str(source.id), db=db)
         return {"data": res}
     except Exception as e:
-        return {"data": {"source_id": source.id, "status": "failed", "error": str(e)}}
+        return {"data": {"source_id": str(source.id), "status": "failed", "error": str(e)}}
 
 
 @router.get("/ingestion/runs")
