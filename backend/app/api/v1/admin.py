@@ -9,6 +9,7 @@ from typing import Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_, text
+from sqlalchemy.orm import selectinload
 import uuid
 
 def is_valid_uuid(val: Any) -> bool:
@@ -99,6 +100,7 @@ async def list_verification_queue(
         select(VerificationQueue, Opportunity, SourceItem)
         .outerjoin(Opportunity, VerificationQueue.opportunity_id == Opportunity.id)
         .outerjoin(SourceItem, VerificationQueue.source_item_id == SourceItem.id)
+        .options(selectinload(Opportunity.organization), selectinload(Opportunity.category))
         .where(VerificationQueue.status == "pending")
         .order_by(desc(VerificationQueue.created_at))
     )
@@ -115,8 +117,11 @@ async def list_verification_queue(
             "registration_deadline": opp.registration_deadline if opp else None,
             "start_date": opp.start_date if opp else None,
             "registration_url": opp.registration_url if opp else (s_item.canonical_url if s_item else None),
-            "trust_score": opp.trust_score if opp else 0.85,
-            "ai_confidence": opp.ai_confidence if opp else 0.82,
+            "eligibility_summary": opp.eligibility_summary if opp else None,
+            "category_name": opp.category.name if opp and opp.category else None,
+            "organization_name": opp.organization.name if opp and opp.organization else None,
+            "trust_score": opp.trust_score if opp else None,
+            "ai_confidence": opp.ai_confidence if opp else None,
             "verification_status": opp.verification_status if opp else "needs_review",
             "flyer_url": opp.flyer_url if opp else None,
         }

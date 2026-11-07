@@ -278,8 +278,10 @@ export async function approveVerificationItem(queueId: string): Promise<{ succes
     if (res.ok) {
       return { success: true };
     }
-  } catch {}
-  return { success: true };
+    return { success: false };
+  } catch {
+    return { success: false };
+  }
 }
 
 export async function rejectVerificationItem(queueId: string, reason?: string): Promise<{ success: boolean }> {
@@ -292,8 +294,10 @@ export async function rejectVerificationItem(queueId: string, reason?: string): 
     if (res.ok) {
       return { success: true };
     }
-  } catch {}
-  return { success: true };
+    return { success: false };
+  } catch {
+    return { success: false };
+  }
 }
 
 export async function testSourceCrawl(url: string, sourceType: string, parserKey: string) {
