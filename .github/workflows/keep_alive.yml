@@ -1,0 +1,17 @@
+name: Nexus Pulse Backend Keep-Alive
+
+on:
+  schedule:
+    # Runs every 12 minutes to prevent Render free-tier instance from sleeping (Render hibernates after 15m)
+    - cron: '*/12 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    name: Ping Render Health Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend Health Endpoint
+        run: |
+          echo "Pinging Nexus Pulse API on Render..."
+          curl -s -f -m 30 "https://nexus-pulse-api-ult5.onrender.com/api/v1/health" || echo "Ping dispatched to Render"

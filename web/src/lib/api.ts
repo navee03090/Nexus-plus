@@ -20,6 +20,19 @@ export function getBase(): string {
 
 // FALLBACK_OPPORTUNITIES imported from ./fallback_data
 
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 4500): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (err) {
+    clearTimeout(timer);
+    throw err;
+  }
+}
+
 
 export async function fetchOpportunities(params?: {
   category?: string;
@@ -38,7 +51,7 @@ export async function fetchOpportunities(params?: {
     if (params?.urgency) url.searchParams.set("urgency", params.urgency);
     if (params?.limit) url.searchParams.set("limit", String(params.limit));
 
-    const res = await fetch(url.toString(), { cache: "no-store" });
+    const res = await fetchWithTimeout(url.toString(), { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       if (json.data && json.data.length > 0) return json.data;
@@ -51,7 +64,7 @@ export async function fetchOpportunities(params?: {
 
 export async function fetchOpportunityBySlug(slug: string): Promise<Opportunity | null> {
   try {
-    const res = await fetch(`${getBase()}/events/${slug}`, { cache: "no-store" });
+    const res = await fetchWithTimeout(`${getBase()}/events/${slug}`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       return json.data;
@@ -64,7 +77,7 @@ export async function fetchOpportunityBySlug(slug: string): Promise<Opportunity 
 
 export async function searchOpportunities(q: string): Promise<Opportunity[]> {
   try {
-    const res = await fetch(`${getBase()}/events/search?q=${encodeURIComponent(q)}`, { cache: "no-store" });
+    const res = await fetchWithTimeout(`${getBase()}/events/search?q=${encodeURIComponent(q)}`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       return json.data;
@@ -80,7 +93,7 @@ export async function searchOpportunities(q: string): Promise<Opportunity[]> {
 
 export async function fetchRecommended(): Promise<Opportunity[]> {
   try {
-    const res = await fetch(`${getBase()}/events/recommended`, { cache: "no-store" });
+    const res = await fetchWithTimeout(`${getBase()}/events/recommended`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       if (json.data && json.data.length > 0) return json.data;
@@ -93,7 +106,7 @@ export async function fetchRecommended(): Promise<Opportunity[]> {
 
 export async function fetchCategories(): Promise<Category[]> {
   try {
-    const res = await fetch(`${getBase()}/categories`, { cache: "no-store" });
+    const res = await fetchWithTimeout(`${getBase()}/categories`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       return json.data;
@@ -111,7 +124,7 @@ export async function fetchCategories(): Promise<Category[]> {
 
 export async function fetchAdminStats() {
   try {
-    const res = await fetch(`${getBase()}/admin/stats`, { cache: "no-store" });
+    const res = await fetchWithTimeout(`${getBase()}/admin/stats`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       return json.data;
@@ -132,7 +145,7 @@ export async function fetchAdminStats() {
 
 export async function fetchVerificationQueue(): Promise<VerificationItem[]> {
   try {
-    const res = await fetch(`${getBase()}/admin/review`, { cache: "no-store" });
+    const res = await fetchWithTimeout(`${getBase()}/admin/review`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
       return json.data || [];
