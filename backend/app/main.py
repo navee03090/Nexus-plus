@@ -146,9 +146,15 @@ app = FastAPI(
 )
 
 # CORS Middleware
+origins = list(settings.cors_origins_list) if hasattr(settings, 'cors_origins_list') else []
+for o in ["https://nexus-plus-gilt.vercel.app", "http://localhost:3000", "http://127.0.0.1:3000"]:
+    if o not in origins:
+        origins.append(o)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list or ["*"],
+    allow_origins=origins,
+    allow_origin_regex=r".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
