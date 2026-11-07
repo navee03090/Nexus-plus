@@ -23,6 +23,7 @@ import {
   Zap
 } from "lucide-react";
 import { testSourceCrawl, triggerSourceCrawl, createAdminSource, triggerApifyScrape, syncApifyRun, checkApifyRunStatus, fetchAdminSources } from "@/lib/api";
+import { signalBusy } from "@/components/TopProgress";
 
 function mapSourceRow(bs: any) {
   return {
@@ -234,6 +235,7 @@ export default function SourcesPage() {
   const handleCrawlNow = async (sourceId: string) => {
     setCrawlingId(sourceId);
     setCrawlFeedback((prev) => ({ ...prev, [sourceId]: "Crawling..." }));
+    signalBusy(true, "Crawling");
     try {
       const res = await triggerSourceCrawl(sourceId);
       if (res.success && res.data) {
@@ -260,6 +262,7 @@ export default function SourcesPage() {
       }));
     } finally {
       setCrawlingId(null);
+      signalBusy(false);
     }
   };
 

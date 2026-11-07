@@ -14,9 +14,11 @@ import {
   Calendar,
   MapPin,
   Clock,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Loader2
 } from "lucide-react";
 import { fetchVerificationQueue, approveVerificationItem, rejectVerificationItem } from "@/lib/api";
+import { signalBusy } from "@/components/TopProgress";
 import { VerificationItem } from "@/types";
 
 export default function VerificationReviewPage() {
@@ -25,6 +27,7 @@ export default function VerificationReviewPage() {
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
 
   useEffect(() => {
     fetchVerificationQueue().then((data) => {
@@ -37,27 +40,36 @@ export default function VerificationReviewPage() {
   const current = items[selectedIdx];
 
   const handleAction = async (action: string) => {
-    if (!current) return;
+    if (!current || busyAction) return;
     const qId = current.queue_id;
+    const label = action.includes("Approved")
+      ? "Publishing"
+      : action.includes("Rejected")
+        ? "Rejecting"
+        : "Saving";
+    setBusyAction(action);
+    signalBusy(true, label);
 
-    if (action.includes("Approved")) {
-      await approveVerificationItem(qId);
-    } else if (action.includes("Rejected")) {
-      await rejectVerificationItem(qId);
-    }
-
-    setActionNotice(`Opportunity ${action} successfully.`);
-
-    // Remove reviewed item from active queue
-    setItems((prev) => {
-      const updated = prev.filter((item) => item.queue_id !== qId);
-      if (selectedIdx >= updated.length) {
-        setSelectedIdx(Math.max(0, updated.length - 1));
+    try {
+      if (action.includes("Approved")) {
+        await approveVerificationItem(qId);
+      } else if (action.includes("Rejected")) {
+        await rejectVerificationItem(qId);
       }
-      return updated;
-    });
 
-    setTimeout(() => setActionNotice(null), 3500);
+      setActionNotice(`Opportunity ${action}.`);
+      setItems((prev) => {
+        const updated = prev.filter((item) => item.queue_id !== qId);
+        if (selectedIdx >= updated.length) {
+          setSelectedIdx(Math.max(0, updated.length - 1));
+        }
+        return updated;
+      });
+      setTimeout(() => setActionNotice(null), 3500);
+    } finally {
+      setBusyAction(null);
+      signalBusy(false);
+    }
   };
 
   if (isLoading) {
@@ -265,18 +277,20 @@ export default function VerificationReviewPage() {
 
           <button
             onClick={() => handleAction("Rejected / Filtered")}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 text-xs font-semibold transition-colors border border-rose-500/30"
+            disabled={Boolean(busyAction)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 text-xs font-semibold transition-colors border border-rose-500/30 disabled:opacity-60"
           >
-            <XCircle className="w-3.5 h-3.5" />
-            <span>Reject / Discard</span>
+            {busyAction === "Rejected / Filtered" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+            <span>{busyAction === "Rejected / Filtered" ? "Rejecting…" : "Reject / Discard"}</span>
           </button>
 
           <button
             onClick={() => handleAction("Approved & Published")}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors shadow-lg shadow-emerald-600/30"
+            disabled={Boolean(busyAction)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors shadow-lg shadow-emerald-600/30 disabled:opacity-60"
           >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Approve & Publish</span>
+            {busyAction === "Approved & Published" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+            <span>{busyAction === "Approved & Published" ? "Publishing…" : "Approve & Publish"}</span>
           </button>
         </div>
       </div>
