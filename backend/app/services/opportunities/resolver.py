@@ -71,11 +71,11 @@ class OpportunityResolver:
                 pass
 
         # 1. Fetch active opportunities for deduplication matching
-        stmt = (
-            select(Opportunity)
-            .where(Opportunity.status.in_(["published", "pending_review", "updated"]))
-            .options(selectinload(Opportunity.embedding))
-        )
+        from app.core.database import is_sqlite
+
+        stmt = select(Opportunity).where(Opportunity.status.in_(["published", "pending_review", "updated"]))
+        if is_sqlite:
+            stmt = stmt.options(selectinload(Opportunity.embedding))
         result = await db.execute(stmt)
         existing_list = result.scalars().all()
 
@@ -87,7 +87,11 @@ class OpportunityResolver:
                 "organization_id": opp.organization_id,
                 "start_date": opp.start_date,
                 "registration_deadline": opp.registration_deadline,
-                "vector": opp.embedding.vector_data if opp.embedding else None,
+                "vector": (
+                    opp.embedding.vector_data
+                    if is_sqlite and opp.embedding and getattr(opp.embedding, "vector_data", None)
+                    else None
+                ),
             }
             for opp in existing_list
         ]
@@ -219,13 +223,15 @@ class OpportunityResolver:
         )
         db.add(opp_source)
 
-        # Store vector embedding
-        opp_embedding = OpportunityEmbedding(
-            opportunity_id=new_opp.id,
-            vector_data=candidate_vector,
-            content_hash=f"vec-{new_opp.id[:8]}",
-        )
-        db.add(opp_embedding)
+        # Store vector embedding on SQLite only. Postgres uses pgvector `embedding`, which
+        # is incompatible with the JSON vector_data mapping and would roll back the insert.
+        if is_sqlite:
+            opp_embedding = OpportunityEmbedding(
+                opportunity_id=new_opp.id,
+                vector_data=candidate_vector,
+                content_hash=f"vec-{new_opp.id[:8]}",
+            )
+            db.add(opp_embedding)
 
         # Link tags
         for tag_str in data.get("tags") or []:

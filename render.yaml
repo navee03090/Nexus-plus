@@ -18,11 +18,11 @@ services:
       - key: GEMINI_MODELS
         value: gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash,gemini-2.5-flash,gemini-flash-lite-latest
       - key: CORS_ORIGINS
-        value: "*"
+        value: "https://nexus-plus-gilt.vercel.app,http://localhost:3000,http://127.0.0.1:3000"
       - key: SUPABASE_URL
         value: https://ervfizmcgcatlwynupbt.supabase.co
       - key: SUPABASE_ANON_KEY
-        value: sb_publishable_IJTTMi5K-ariqsakvSrYiA_LmeINzor
+        sync: false
       - key: SECRET_KEY
         generateValue: true
       - key: GEMINI_API_KEY
@@ -30,6 +30,6 @@ services:
       - key: APIFY_API_TOKEN
         sync: false
       - key: ENABLE_ADMIN_BYPASS
-        value: "true"
+        value: "false"
       - key: DATABASE_URL
-        value: postgresql+asyncpg://postgres.ervfizmcgcatlwynupbt:Alphalmg9898%40@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
+        sync: false

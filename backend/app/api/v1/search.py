@@ -42,7 +42,6 @@ async def search_opportunities(
         .options(
             selectinload(Opportunity.organization),
             selectinload(Opportunity.category),
-            selectinload(Opportunity.embedding)
         )
     )
 
@@ -69,8 +68,10 @@ async def search_opportunities(
 
         # 3. Vector semantic similarity
         vector_score = 0.0
-        if opp.embedding and opp.embedding.vector_data and query_vector:
-            vector_score = cosine_vector_similarity(query_vector, opp.embedding.vector_data)
+        emb = getattr(opp, "embedding", None)
+        vector_payload = getattr(emb, "vector_data", None) if emb else None
+        if vector_payload and query_vector:
+            vector_score = cosine_vector_similarity(query_vector, vector_payload)
 
         # Hybrid composite ranking: 50% semantic vector, 50% keyword match
         hybrid_score = (vector_score * 0.50) + (min(1.0, keyword_score) * 0.50)

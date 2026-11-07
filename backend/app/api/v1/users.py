@@ -13,36 +13,9 @@ from app.models.profile import Profile
 from app.models.eligibility import SavedOpportunity
 from app.models.notification import NotificationDelivery
 from app.models.opportunity import Opportunity
-from app.services.personalization.recommender import PersonalizationRecommender
 from app.schemas.user import ProfileUpdate
 
 router = APIRouter(tags=["User Profile & Personalization"])
-
-
-@router.get("/events/recommended")
-async def get_recommended_feed(
-    db: AsyncSession = Depends(get_db),
-    user_claims: Optional[Dict[str, Any]] = Depends(get_current_user_claims)
-):
-    """Returns opportunities ranked by personal relevance score with explanation breakdown."""
-    user_id = user_claims.get("id") if user_claims else "default-guest"
-
-    # Fetch profile or construct sample
-    prof = await db.get(Profile, user_id)
-    profile_dict = {
-        "interests": ["AI", "Cybersecurity", "Software Engineering"],
-        "education_level": "Undergraduate",
-        "field_of_study": "Computer Systems Engineering",
-        "city": "Peshawar",
-        "country": "Pakistan",
-    }
-    if prof:
-        profile_dict["city"] = prof.city
-        profile_dict["education_level"] = prof.education_level or "Undergraduate"
-        profile_dict["field_of_study"] = prof.field_of_study or "Computer Science"
-
-    recommended = await PersonalizationRecommender.get_recommended_for_user(db, profile_dict)
-    return {"data": recommended}
 
 
 @router.get("/profiles/me")

@@ -40,7 +40,11 @@ Base = declarative_base()
 
 # Engine configuration
 is_sqlite = settings.DATABASE_URL.startswith("sqlite")
-connect_args = {"check_same_thread": False} if is_sqlite else {}
+connect_args: dict = {}
+if is_sqlite:
+    connect_args = {"check_same_thread": False}
+elif "supabase.com" in settings.DATABASE_URL or settings.APP_ENV == "production":
+    connect_args = {"ssl": True}
 
 engine = create_async_engine(
     settings.DATABASE_URL,

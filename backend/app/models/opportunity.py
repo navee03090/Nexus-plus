@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import String, Float, Boolean, Integer, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.core.database import Base, GUID
+from app.core.database import Base, GUID, is_sqlite
 
 
 class Opportunity(Base):
@@ -45,7 +45,13 @@ class Opportunity(Base):
     category = relationship("Category", back_populates="opportunities")
     sources = relationship("OpportunitySource", back_populates="opportunity", cascade="all, delete-orphan")
     changes = relationship("OpportunityChange", back_populates="opportunity", cascade="all, delete-orphan")
-    embedding = relationship("OpportunityEmbedding", back_populates="opportunity", uselist=False, cascade="all, delete-orphan")
+    embedding = relationship(
+        "OpportunityEmbedding",
+        back_populates="opportunity",
+        uselist=False,
+        cascade="all, delete-orphan",
+        lazy="noload",
+    )
     eligibility_rules = relationship("EligibilityRule", back_populates="opportunity", cascade="all, delete-orphan")
 
 
@@ -83,8 +89,10 @@ class OpportunityEmbedding(Base):
 
     id: Mapped[str] = mapped_column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
     opportunity_id: Mapped[str] = mapped_column(GUID, ForeignKey("opportunities.id", ondelete="CASCADE"), unique=True)
-    # Stored as JSON list of floats for portability across SQLite and PostgreSQL pgvector
-    vector_data: Mapped[list] = mapped_column(JSON, nullable=True)
+    # SQLite keeps a JSON vector. Postgres table uses pgvector `embedding` which is not mapped,
+    # so opportunity inserts are not rolled back by a missing vector_data column.
+    if is_sqlite:
+        vector_data: Mapped[list] = mapped_column(JSON, nullable=True)
     model: Mapped[str] = mapped_column(String(100), default="text-embedding-004")
     content_hash: Mapped[str] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

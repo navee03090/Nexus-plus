@@ -84,6 +84,7 @@ async def list_events(
     sort_by: str = Query("newest", description="newest, deadline, popular"),
     page: int = Query(1, ge=1),
     page_size: int = Query(15, ge=1, le=50),
+    limit: Optional[int] = Query(None, ge=1, le=50, description="Alias for page_size"),
     db: AsyncSession = Depends(get_db),
     user_claims: Optional[Dict[str, Any]] = Depends(get_current_user_claims)
 ):
@@ -113,9 +114,10 @@ async def list_events(
     else:
         query = query.order_by(desc(Opportunity.featured), desc(Opportunity.published_at))
 
-    # Pagination
-    offset = (page - 1) * page_size
-    paginated_query = query.offset(offset).limit(page_size)
+    # Pagination (`limit` is accepted as an alias of `page_size` from the web client)
+    effective_page_size = limit or page_size
+    offset = (page - 1) * effective_page_size
+    paginated_query = query.offset(offset).limit(effective_page_size)
 
     res = await db.execute(paginated_query)
     opps = res.scalars().all()
@@ -157,9 +159,9 @@ async def list_events(
         "data": items,
         "meta": {
             "page": page,
-            "page_size": page_size,
+            "page_size": effective_page_size,
             "total_items": total_count,
-            "total_pages": (total_count + page_size - 1) // page_size,
+            "total_pages": (total_count + effective_page_size - 1) // effective_page_size,
         }
     }
 

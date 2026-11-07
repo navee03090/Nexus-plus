@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     EMBEDDING_DIMENSION: int = 768
 
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,https://nexus-plus-gilt.vercel.app,*"
+    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,https://nexus-plus-gilt.vercel.app"
 
     # Rate Limiting & Crawling Limits
     CRAWLER_USER_AGENT: str = "NexusPulse-Bot/1.0 (+https://nexus-pulse.org/bot; opportunity-intelligence)"

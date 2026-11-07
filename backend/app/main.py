@@ -50,75 +50,86 @@ async def periodic_crawler_scheduler():
 async def lifespan(app: FastAPI):
     # Startup: Initialize schemas and seed baseline data for dev
     logger.info("Initializing NEXUS PULSE services...")
-    await init_db()
+    try:
+        await init_db()
+    except Exception as e:
+        logger.error(f"Database init failed (continuing): {e}")
+
+    def _seed_uuid(key: str) -> str:
+        import uuid as _uuid
+        return str(_uuid.uuid5(_uuid.NAMESPACE_URL, f"https://nexus-pulse.org/seed/{key}"))
 
     # Auto-seed baseline categories and realistic entities if empty
-    async with AsyncSessionLocal() as session:
-        from sqlalchemy import select, func
-        from app.models.category import Category
-        from app.models.organization import Organization
-        from app.models.source import Source
+    try:
+        async with AsyncSessionLocal() as session:
+            from sqlalchemy import select, func
+            from app.models.category import Category
+            from app.models.organization import Organization
+            from app.models.source import Source
 
-        from app.models.opportunity import Opportunity
-        cat_count = (await session.execute(select(func.count(Category.id)))).scalar() or 0
-        if cat_count == 0:
-            logger.info("Initializing baseline taxonomy categories...")
-            for idx, (name, slug, desc, icon) in enumerate([
-                ("Hackathon", "hackathon", "Competitive innovation sprints", "Code2"),
-                ("Competition", "competition", "Skill and challenge contests", "Trophy"),
-                ("Workshop", "workshop", "Hands-on technical bootcamps", "Cpu"),
-                ("Conference", "conference", "Academic research summits", "Presentation"),
-                ("Scholarship", "scholarship", "Financial and tuition scholarships", "Sparkles"),
-                ("Internship", "internship", "Industry job placements", "Briefcase"),
-                ("Startup Program", "startup-program", "Accelerators and incubation", "Rocket"),
-            ], 1):
-                session.add(Category(id=f"cat-{slug}", name=name, slug=slug, description=desc, icon=icon, is_active=True, display_order=idx))
-            await session.commit()
-            logger.info("Baseline taxonomy categories initialized.")
+            cat_count = (await session.execute(select(func.count(Category.id)))).scalar() or 0
+            if cat_count == 0:
+                logger.info("Initializing baseline taxonomy categories...")
+                for idx, (name, slug, desc, icon) in enumerate([
+                    ("Hackathon", "hackathon", "Competitive innovation sprints", "Code2"),
+                    ("Competition", "competition", "Skill and challenge contests", "Trophy"),
+                    ("Workshop", "workshop", "Hands-on technical bootcamps", "Cpu"),
+                    ("Conference", "conference", "Academic research summits", "Presentation"),
+                    ("Scholarship", "scholarship", "Financial and tuition scholarships", "Sparkles"),
+                    ("Internship", "internship", "Industry job placements", "Briefcase"),
+                    ("Startup Program", "startup-program", "Accelerators and incubation", "Rocket"),
+                ], 1):
+                    session.add(Category(id=_seed_uuid(f"cat-{slug}"), name=name, slug=slug, description=desc, icon=icon, is_active=True, display_order=idx))
+                await session.commit()
+                logger.info("Baseline taxonomy categories initialized.")
 
-        # Baseline Organizations and Monitored Sources (Real Pakistani Channels)
-        src_count = (await session.execute(select(func.count(Source.id)))).scalar() or 0
-        if src_count == 0:
-            logger.info("Initializing genuine monitored channels and organizations...")
-            org_defs = [
-                ("org-kpitb", "KPITB", "kpitb", "Khyber Pakhtunkhwa Information Technology Board", "Government", "Pakistan", "Peshawar", "https://www.kpitb.gov.pk", 0.99),
-                ("org-uet", "UET Peshawar", "uet-peshawar", "University of Engineering and Technology Peshawar", "University", "Pakistan", "Peshawar", "https://www.uetpeshawar.edu.pk", 0.98),
-                ("org-nic", "NIC Peshawar", "nic-peshawar", "National Incubation Center Peshawar", "Incubator", "Pakistan", "Peshawar", "https://nicpeshawar.pk", 0.96),
-                ("org-gdg", "GDG Peshawar", "gdg-peshawar", "Google Developer Groups Peshawar Community", "Community", "Pakistan", "Peshawar", "https://gdg.community.dev/gdg-peshawar", 0.95),
-                ("org-giki", "GIK Institute", "gik-institute", "Ghulam Ishaq Khan Institute of Engineering Sciences and Technology", "University", "Pakistan", "Topi", "https://giki.edu.pk", 0.97),
-                ("org-fast", "FAST-NUCES Peshawar", "fast-pwr", "National University of Computer and Emerging Sciences Peshawar Campus", "University", "Pakistan", "Peshawar", "https://pwr.nu.edu.pk", 0.96),
-                ("org-hec", "HEC Pakistan", "hec-pakistan", "Higher Education Commission of Pakistan", "Government", "Pakistan", "Islamabad", "https://www.hec.gov.pk", 0.99),
-            ]
-            for org_id, name, slug, desc, o_type, country, city, web, trust in org_defs:
-                session.add(Organization(id=org_id, name=name, slug=slug, description=desc, organization_type=o_type, country=country, city=city, website_url=web, trust_score=trust))
-            await session.flush()
+            src_count = (await session.execute(select(func.count(Source.id)))).scalar() or 0
+            if src_count == 0:
+                logger.info("Initializing genuine monitored channels and organizations...")
+                org_defs = [
+                    ("org-kpitb", "KPITB", "kpitb", "Khyber Pakhtunkhwa Information Technology Board", "Government", "Pakistan", "Peshawar", "https://www.kpitb.gov.pk", 0.99),
+                    ("org-uet", "UET Peshawar", "uet-peshawar", "University of Engineering and Technology Peshawar", "University", "Pakistan", "Peshawar", "https://www.uetpeshawar.edu.pk", 0.98),
+                    ("org-nic", "NIC Peshawar", "nic-peshawar", "National Incubation Center Peshawar", "Technology Organization", "Pakistan", "Peshawar", "https://nicpeshawar.pk", 0.96),
+                    ("org-gdg", "GDG Peshawar", "gdg-peshawar", "Google Developer Groups Peshawar Community", "Other", "Pakistan", "Peshawar", "https://gdg.community.dev/gdg-peshawar", 0.95),
+                    ("org-giki", "GIK Institute", "gik-institute", "Ghulam Ishaq Khan Institute of Engineering Sciences and Technology", "University", "Pakistan", "Topi", "https://giki.edu.pk", 0.97),
+                    ("org-fast", "FAST-NUCES Peshawar", "fast-pwr", "National University of Computer and Emerging Sciences Peshawar Campus", "University", "Pakistan", "Peshawar", "https://pwr.nu.edu.pk", 0.96),
+                    ("org-hec", "HEC Pakistan", "hec-pakistan", "Higher Education Commission of Pakistan", "Government", "Pakistan", "Islamabad", "https://www.hec.gov.pk", 0.99),
+                ]
+                org_ids = {}
+                for org_key, name, slug, desc, o_type, country, city, web, trust in org_defs:
+                    oid = _seed_uuid(org_key)
+                    org_ids[org_key] = oid
+                    session.add(Organization(id=oid, name=name, slug=slug, description=desc, organization_type=o_type, country=country, city=city, website_url=web, trust_score=trust))
+                await session.flush()
 
-            source_defs = [
-                ("src-kpitb-web", "org-kpitb", "KPITB Official Announcements", "Website", "Government Portal", "https://www.kpitb.gov.pk", "kpitb_portal", 0.99),
-                ("src-kpitb-fb", "org-kpitb", "KPITB Official Facebook Page", "Social", "Facebook", "https://www.facebook.com/kpitbgov", "apify_facebook_crawler", 0.97),
-                ("src-uet-web", "org-uet", "UET Peshawar Notice Board", "Website", "University Portal", "https://www.uetpeshawar.edu.pk", "uet_peshawar_events", 0.98),
-                ("src-nic-web", "org-nic", "NIC Peshawar Programs", "Website", "Incubator Portal", "https://nicpeshawar.pk", "nic_peshawar_events", 0.96),
-                ("src-nic-fb", "org-nic", "NIC Peshawar Facebook Community", "Social", "Facebook", "https://www.facebook.com/nicpeshawar", "apify_facebook_crawler", 0.95),
-                ("src-gdg-ig", "org-gdg", "GDG Peshawar Instagram Feed", "Social", "Instagram", "https://www.instagram.com/gdgpeshawar", "apify_instagram_crawler", 0.95),
-                ("src-giki-web", "org-giki", "GIKI Competitions & Hackathons", "Website", "University Website", "https://giki.edu.pk", "giki_events", 0.96),
-                ("src-fast-web", "org-fast", "FAST Peshawar ACM Notices", "Website", "University Website", "https://pwr.nu.edu.pk", "fast_pwr", 0.95),
-                ("src-hec-web", "org-hec", "HEC Scholarships Registry", "Website", "Government Registry", "https://www.hec.gov.pk", "hec_scholarships", 0.99),
-            ]
-            for src_id, org_id, name, s_type, plat, url, p_key, trust in source_defs:
-                session.add(Source(
-                    id=src_id,
-                    organization_id=org_id,
-                    name=name,
-                    source_type=s_type,
-                    platform=plat,
-                    url=url,
-                    parser_key=p_key,
-                    trust_score=trust,
-                    status="active",
-                    is_active=True
-                ))
-            await session.commit()
-            logger.info("Genuine monitored channels and organizations initialized.")
+                source_defs = [
+                    ("src-kpitb-web", "org-kpitb", "KPITB Official Announcements", "Website", "Government Portal", "https://www.kpitb.gov.pk", "kpitb_portal", 0.99),
+                    ("src-kpitb-fb", "org-kpitb", "KPITB Official Facebook Page", "Social", "Facebook", "https://www.facebook.com/kpitbgov", "apify_facebook_crawler", 0.97),
+                    ("src-uet-web", "org-uet", "UET Peshawar Notice Board", "Website", "University Portal", "https://www.uetpeshawar.edu.pk", "uet_peshawar_events", 0.98),
+                    ("src-nic-web", "org-nic", "NIC Peshawar Programs", "Website", "Incubator Portal", "https://nicpeshawar.pk", "nic_peshawar_events", 0.96),
+                    ("src-nic-fb", "org-nic", "NIC Peshawar Facebook Community", "Social", "Facebook", "https://www.facebook.com/nicpeshawar", "apify_facebook_crawler", 0.95),
+                    ("src-gdg-ig", "org-gdg", "GDG Peshawar Instagram Feed", "Social", "Instagram", "https://www.instagram.com/gdgpeshawar", "apify_instagram_crawler", 0.95),
+                    ("src-giki-web", "org-giki", "GIKI Competitions & Hackathons", "Website", "University Website", "https://giki.edu.pk", "giki_events", 0.96),
+                    ("src-fast-web", "org-fast", "FAST Peshawar ACM Notices", "Website", "University Website", "https://pwr.nu.edu.pk", "fast_pwr", 0.95),
+                    ("src-hec-web", "org-hec", "HEC Scholarships Registry", "Website", "Government Registry", "https://www.hec.gov.pk", "hec_scholarships", 0.99),
+                ]
+                for src_key, org_key, name, s_type, plat, url, p_key, trust in source_defs:
+                    session.add(Source(
+                        id=_seed_uuid(src_key),
+                        organization_id=org_ids[org_key],
+                        name=name,
+                        source_type=s_type,
+                        platform=plat,
+                        url=url,
+                        parser_key=p_key,
+                        trust_score=trust,
+                        status="active",
+                        is_active=True
+                    ))
+                await session.commit()
+                logger.info("Genuine monitored channels and organizations initialized.")
+    except Exception as e:
+        logger.error(f"Baseline seed skipped: {e}")
 
     # Start autonomous background crawler task
     crawler_task = asyncio.create_task(periodic_crawler_scheduler())
@@ -145,8 +156,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS Middleware
-origins = list(settings.cors_origins_list) if hasattr(settings, 'cors_origins_list') else []
+# CORS Middleware — explicit origins only (credentials + wildcard is invalid in browsers)
+origins = [o for o in settings.cors_origins_list if o and o != "*"]
 for o in ["https://nexus-plus-gilt.vercel.app", "http://localhost:3000", "http://127.0.0.1:3000"]:
     if o not in origins:
         origins.append(o)
@@ -154,7 +165,6 @@ for o in ["https://nexus-plus-gilt.vercel.app", "http://localhost:3000", "http:/
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

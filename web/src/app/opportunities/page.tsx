@@ -38,9 +38,9 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
         (o) =>
           o.title.toLowerCase().includes(queryLower) ||
           o.summary.toLowerCase().includes(queryLower) ||
-          o.city.toLowerCase().includes(queryLower) ||
+          (o.city || "").toLowerCase().includes(queryLower) ||
           (o.organization_name && o.organization_name.toLowerCase().includes(queryLower)) ||
-          o.tags.some((t) => t.toLowerCase().includes(queryLower))
+          (o.tags || []).some((t) => t.toLowerCase().includes(queryLower))
       )
     : allOpportunities;
 

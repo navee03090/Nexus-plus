@@ -1,5 +1,11 @@
 import { Opportunity, Category, Organization, Source, VerificationItem } from "@/types";
 import { FALLBACK_OPPORTUNITIES } from "./fallback_data";
+import {
+  fetchPublishedFromSupabase,
+  fetchOpportunityFromSupabase,
+  fetchCategoriesFromSupabase,
+  fetchStatsFromSupabase,
+} from "./supabase_data";
 
 export const API_BASE = "https://nexus-pulse-api-ult5.onrender.com/api/v1";
 
@@ -43,13 +49,23 @@ export async function fetchOpportunities(params?: {
   limit?: number;
 }): Promise<Opportunity[]> {
   try {
+    const live = await fetchPublishedFromSupabase(params);
+    if (live.length > 0) return live;
+  } catch {
+    // Render is the next fallback
+  }
+
+  try {
     const url = new URL(`${getBase()}/events`);
     if (params?.category) url.searchParams.set("category", params.category);
     if (params?.city) url.searchParams.set("city", params.city);
     if (params?.is_online !== undefined) url.searchParams.set("is_online", String(params.is_online));
     if (params?.sort_by) url.searchParams.set("sort_by", params.sort_by);
     if (params?.urgency) url.searchParams.set("urgency", params.urgency);
-    if (params?.limit) url.searchParams.set("limit", String(params.limit));
+    if (params?.limit) {
+      url.searchParams.set("limit", String(params.limit));
+      url.searchParams.set("page_size", String(params.limit));
+    }
 
     const res = await fetchWithTimeout(url.toString(), { cache: "no-store" });
     if (res.ok) {
@@ -64,6 +80,12 @@ export async function fetchOpportunities(params?: {
 
 export async function fetchOpportunityBySlug(slug: string): Promise<Opportunity | null> {
   try {
+    const live = await fetchOpportunityFromSupabase(slug);
+    if (live) return live;
+  } catch {
+    // Render is the next fallback
+  }
+  try {
     const res = await fetchWithTimeout(`${getBase()}/events/${slug}`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
@@ -76,6 +98,22 @@ export async function fetchOpportunityBySlug(slug: string): Promise<Opportunity 
 }
 
 export async function searchOpportunities(q: string): Promise<Opportunity[]> {
+  const qLower = q.toLowerCase();
+  try {
+    const live = await fetchPublishedFromSupabase({ limit: 50 });
+    if (live.length > 0) {
+      return live.filter(
+        (o) =>
+          o.title.toLowerCase().includes(qLower) ||
+          o.summary.toLowerCase().includes(qLower) ||
+          (o.city || "").toLowerCase().includes(qLower) ||
+          (o.organization_name && o.organization_name.toLowerCase().includes(qLower)) ||
+          o.tags.some((t) => t.toLowerCase().includes(qLower))
+      );
+    }
+  } catch {
+    // Render is the next fallback
+  }
   try {
     const res = await fetchWithTimeout(`${getBase()}/events/search?q=${encodeURIComponent(q)}`, { cache: "no-store" });
     if (res.ok) {
@@ -85,13 +123,18 @@ export async function searchOpportunities(q: string): Promise<Opportunity[]> {
   } catch {
     // fallback
   }
-  const qLower = q.toLowerCase();
   return FALLBACK_OPPORTUNITIES.filter(
     (o) => o.title.toLowerCase().includes(qLower) || o.summary.toLowerCase().includes(qLower) || o.tags.some(t => t.toLowerCase().includes(qLower))
   );
 }
 
 export async function fetchRecommended(): Promise<Opportunity[]> {
+  try {
+    const live = await fetchPublishedFromSupabase({ limit: 6, featuredFirst: true });
+    if (live.length > 0) return live;
+  } catch {
+    // Render is the next fallback
+  }
   try {
     const res = await fetchWithTimeout(`${getBase()}/events/recommended`, { cache: "no-store" });
     if (res.ok) {
@@ -105,6 +148,12 @@ export async function fetchRecommended(): Promise<Opportunity[]> {
 }
 
 export async function fetchCategories(): Promise<Category[]> {
+  try {
+    const live = await fetchCategoriesFromSupabase();
+    if (live.length > 0) return live;
+  } catch {
+    // Render is the next fallback
+  }
   try {
     const res = await fetchWithTimeout(`${getBase()}/categories`, { cache: "no-store" });
     if (res.ok) {
@@ -124,6 +173,12 @@ export async function fetchCategories(): Promise<Category[]> {
 
 export async function fetchAdminStats() {
   try {
+    const live = await fetchStatsFromSupabase();
+    if (live) return live;
+  } catch {
+    // Render is the next fallback
+  }
+  try {
     const res = await fetchWithTimeout(`${getBase()}/admin/stats`, { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
@@ -131,15 +186,15 @@ export async function fetchAdminStats() {
     }
   } catch {}
   return {
-    sources_monitored: 18,
-    active_sources: 18,
+    sources_monitored: 0,
+    active_sources: 0,
     failed_sources: 0,
-    opportunities_discovered: 73,
-    opportunities_published: 25,
-    pending_verification: 48,
-    duplicates_resolved: 48,
-    ai_extraction_success_rate: 0.985,
-    system_health: "Healthy",
+    opportunities_discovered: 0,
+    opportunities_published: 0,
+    pending_verification: 0,
+    duplicates_resolved: 0,
+    ai_extraction_success_rate: 0,
+    system_health: "Degraded",
   };
 }
 
