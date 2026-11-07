@@ -65,8 +65,6 @@ async def lifespan(app: FastAPI):
         async with AsyncSessionLocal() as session:
             from sqlalchemy import select, func
             from app.models.category import Category
-            from app.models.organization import Organization
-            from app.models.source import Source
 
             cat_count = (await session.execute(select(func.count(Category.id)))).scalar() or 0
             if cat_count == 0:
@@ -84,51 +82,8 @@ async def lifespan(app: FastAPI):
                 await session.commit()
                 logger.info("Baseline taxonomy categories initialized.")
 
-            src_count = (await session.execute(select(func.count(Source.id)))).scalar() or 0
-            if src_count == 0:
-                logger.info("Initializing genuine monitored channels and organizations...")
-                org_defs = [
-                    ("org-kpitb", "KPITB", "kpitb", "Khyber Pakhtunkhwa Information Technology Board", "Government", "Pakistan", "Peshawar", "https://www.kpitb.gov.pk", 0.99),
-                    ("org-uet", "UET Peshawar", "uet-peshawar", "University of Engineering and Technology Peshawar", "University", "Pakistan", "Peshawar", "https://www.uetpeshawar.edu.pk", 0.98),
-                    ("org-nic", "NIC Peshawar", "nic-peshawar", "National Incubation Center Peshawar", "Technology Organization", "Pakistan", "Peshawar", "https://nicpeshawar.pk", 0.96),
-                    ("org-gdg", "GDG Peshawar", "gdg-peshawar", "Google Developer Groups Peshawar Community", "Other", "Pakistan", "Peshawar", "https://gdg.community.dev/gdg-peshawar", 0.95),
-                    ("org-giki", "GIK Institute", "gik-institute", "Ghulam Ishaq Khan Institute of Engineering Sciences and Technology", "University", "Pakistan", "Topi", "https://giki.edu.pk", 0.97),
-                    ("org-fast", "FAST-NUCES Peshawar", "fast-pwr", "National University of Computer and Emerging Sciences Peshawar Campus", "University", "Pakistan", "Peshawar", "https://pwr.nu.edu.pk", 0.96),
-                    ("org-hec", "HEC Pakistan", "hec-pakistan", "Higher Education Commission of Pakistan", "Government", "Pakistan", "Islamabad", "https://www.hec.gov.pk", 0.99),
-                ]
-                org_ids = {}
-                for org_key, name, slug, desc, o_type, country, city, web, trust in org_defs:
-                    oid = _seed_uuid(org_key)
-                    org_ids[org_key] = oid
-                    session.add(Organization(id=oid, name=name, slug=slug, description=desc, organization_type=o_type, country=country, city=city, website_url=web, trust_score=trust))
-                await session.flush()
-
-                source_defs = [
-                    ("src-kpitb-web", "org-kpitb", "KPITB Official Announcements", "Website", "Government Portal", "https://www.kpitb.gov.pk", "kpitb_portal", 0.99),
-                    ("src-kpitb-fb", "org-kpitb", "KPITB Official Facebook Page", "Social", "Facebook", "https://www.facebook.com/kpitbgov", "apify_facebook_crawler", 0.97),
-                    ("src-uet-web", "org-uet", "UET Peshawar Notice Board", "Website", "University Portal", "https://www.uetpeshawar.edu.pk", "uet_peshawar_events", 0.98),
-                    ("src-nic-web", "org-nic", "NIC Peshawar Programs", "Website", "Incubator Portal", "https://nicpeshawar.pk", "nic_peshawar_events", 0.96),
-                    ("src-nic-fb", "org-nic", "NIC Peshawar Facebook Community", "Social", "Facebook", "https://www.facebook.com/nicpeshawar", "apify_facebook_crawler", 0.95),
-                    ("src-gdg-ig", "org-gdg", "GDG Peshawar Instagram Feed", "Social", "Instagram", "https://www.instagram.com/gdgpeshawar", "apify_instagram_crawler", 0.95),
-                    ("src-giki-web", "org-giki", "GIKI Competitions & Hackathons", "Website", "University Website", "https://giki.edu.pk", "giki_events", 0.96),
-                    ("src-fast-web", "org-fast", "FAST Peshawar ACM Notices", "Website", "University Website", "https://pwr.nu.edu.pk", "fast_pwr", 0.95),
-                    ("src-hec-web", "org-hec", "HEC Scholarships Registry", "Website", "Government Registry", "https://www.hec.gov.pk", "hec_scholarships", 0.99),
-                ]
-                for src_key, org_key, name, s_type, plat, url, p_key, trust in source_defs:
-                    session.add(Source(
-                        id=_seed_uuid(src_key),
-                        organization_id=org_ids[org_key],
-                        name=name,
-                        source_type=s_type,
-                        platform=plat,
-                        url=url,
-                        parser_key=p_key,
-                        trust_score=trust,
-                        status="active",
-                        is_active=True
-                    ))
-                await session.commit()
-                logger.info("Genuine monitored channels and organizations initialized.")
+            from app.services.ingestion.official_catalog import ensure_official_catalog
+            await ensure_official_catalog(session)
     except Exception as e:
         logger.error(f"Baseline seed skipped: {e}")
 
