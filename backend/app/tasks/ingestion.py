@@ -21,6 +21,7 @@ from app.services.ingestion import get_adapter_for_source
 from app.algorithms.rate_limiter import SourceRateLimiter
 from app.services.extraction.extractor import ExtractionPipeline
 from app.services.opportunities.resolver import OpportunityResolver
+from app.services.opportunities.recency import is_stale_announcement, is_past_opportunity
 
 
 async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict[str, Any]:
@@ -74,11 +75,26 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
             published_count = 0
             updated_count = 0
             dup_count = 0
+            skipped_stale = 0
+
+            def _remember_skip(item_obj, content_hash_val: str, reason: str) -> None:
+                db.add(SourceItem(
+                    source_id=source.id,
+                    external_id=item_obj.external_id,
+                    canonical_url=item_obj.canonical_url,
+                    content_hash=content_hash_val,
+                    title_raw=item_obj.title_raw,
+                    caption_raw=item_obj.caption_raw,
+                    body_raw=(item_obj.body_raw or "")[:4000],
+                    published_at=item_obj.published_at,
+                    raw_payload={"skip_reason": reason},
+                    content_type="html" if (item_obj.content_type == "web" or not item_obj.content_type) else item_obj.content_type,
+                    status="rejected",
+                ))
 
             # 4. Process each discovered item with deduplication & AI pipeline
             for item in items:
                 content_hash = item.content_hash
-                # Idempotency check: see if item with hash already exists
                 hash_stmt = select(SourceItem).where(
                     SourceItem.source_id == source.id,
                     SourceItem.content_hash == content_hash
@@ -89,11 +105,26 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
                     dup_count += 1
                     continue
 
-                # 4. Automated Downstream Processing: Extract in memory FIRST (No DB lock held!)
+                if is_stale_announcement(item.published_at, lookback_days=settings.CRAWL_LOOKBACK_DAYS):
+                    skipped_stale += 1
+                    _remember_skip(item, content_hash, "stale_announcement")
+                    await db.commit()
+                    continue
+
                 s_item_id = str(uuid.uuid4())
                 try:
                     pipeline = ExtractionPipeline()
                     extraction_output, val_result, qr_codes, ocr_text = await pipeline.process_raw_evidence(item)
+                    data = val_result.validated_data or {}
+
+                    if (not extraction_output.is_opportunity) or is_past_opportunity(
+                        registration_deadline=data.get("registration_deadline"),
+                        start_date=data.get("start_date"),
+                    ):
+                        skipped_stale += 1
+                        _remember_skip(item, content_hash, "past_or_not_opportunity")
+                        await db.commit()
+                        continue
 
                     s_item = SourceItem(
                         id=s_item_id,
@@ -175,6 +206,7 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
             run.items_found = discovered_count
             run.items_processed = saved_count
             run.items_duplicated = dup_count
+            run.items_rejected = skipped_stale
             await db.commit()
 
             return {
@@ -185,7 +217,8 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
                 "items_saved": saved_count,
                 "items_published": published_count,
                 "items_updated": updated_count,
-                "items_duplicated": dup_count
+                "items_duplicated": dup_count,
+                "items_skipped_stale": skipped_stale,
             }
 
         except Exception as e:

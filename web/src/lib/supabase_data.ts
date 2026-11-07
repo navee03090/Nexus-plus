@@ -80,6 +80,26 @@ async function restCount(table: string, extraQuery = ""): Promise<number> {
   return Number.isFinite(n) ? n : 0;
 }
 
+function isUpcomingOpportunity(row: {
+  registration_deadline?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+}): boolean {
+  const now = Date.now();
+  const toMs = (value?: string | null) => {
+    if (!value) return null;
+    const t = new Date(value).getTime();
+    return Number.isNaN(t) ? null : t;
+  };
+  const end = toMs(row.end_date);
+  const start = toMs(row.start_date);
+  const deadline = toMs(row.registration_deadline);
+  if (end != null && end < now) return false;
+  if (deadline != null && deadline < now && (start == null || start < now)) return false;
+  if (deadline == null && start != null && start < now) return false;
+  return true;
+}
+
 function deadlineUrgency(deadline?: string | null): { status: string; label: string } {
   if (!deadline) return { status: "Normal", label: "No deadline specified" };
   const diff = new Date(deadline).getTime() - Date.now();
@@ -189,7 +209,7 @@ export async function fetchPublishedFromSupabase(params?: {
   }
   if (!data || data.length === 0) return [];
 
-  let items = data.map(mapOpportunity);
+  let items = data.filter(isUpcomingOpportunity).map(mapOpportunity);
   if (params?.urgency === "urgent") {
     items = items.filter((o) => o.deadline_urgency === "Urgent" || o.deadline_urgency === "Closing Soon");
   }

@@ -24,6 +24,7 @@ CRITICAL ZERO-HALLUCINATION RULES:
 4. Distinguish clearly between EVENT DATE (when event takes place) and REGISTRATION DEADLINE (last day to apply).
 5. Pakistani sources default to Asia/Karachi timezone (+05:00).
 6. You MUST return ONLY a valid JSON object matching the requested schema. Do not add conversational text.
+7. Only current or upcoming opportunities. If the event date AND registration deadline have already passed, set is_opportunity=false.
 """
 
 

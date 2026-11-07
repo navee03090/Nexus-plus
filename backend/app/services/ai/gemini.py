@@ -28,6 +28,7 @@ CRITICAL ZERO-HALLUCINATION RULES:
 7. Pakistani sources default to Asia/Karachi timezone (+05:00).
 8. If the announcement represents a deadline extension, cancellation, or postponement, set 'possible_update': true and state what changed.
 9. Return output strictly matching the requested JSON schema.
+10. Only current or upcoming opportunities. If the event date AND registration deadline have already passed, set is_opportunity=false.
 """
 
 

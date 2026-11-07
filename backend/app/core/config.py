@@ -66,6 +66,8 @@ class Settings(BaseSettings):
     DEFAULT_CRAWL_DELAY_SECONDS: float = 1.0
     REQUEST_TIMEOUT_SECONDS: float = 15.0
     MAX_CONTENT_LENGTH_BYTES: int = 15 * 1024 * 1024  # 15 MB
+    CRAWL_LOOKBACK_DAYS: int = 60
+    CRAWL_MAX_ITEMS: int = 12
 
     # Notifications
     SMTP_HOST: Optional[str] = None

@@ -17,6 +17,7 @@ from app.services.ingestion.base import BaseSourceAdapter, RawEvidenceItem, RawE
 from app.core.security import validate_target_url, sanitize_text
 from app.core.config import settings
 from app.core.logging import logger
+from app.services.opportunities.recency import is_stale_announcement
 
 # In-memory ETag & Last-Modified cache for polite differential crawling
 _HTTP_CACHE: Dict[str, Dict[str, str]] = {}
@@ -164,7 +165,8 @@ class WebsiteAdapter(BaseSourceAdapter):
                     candidates = [h.parent for h in headings if h.find("a") or h.find_next("a")]
 
             seen_urls = set()
-            for idx, c in enumerate(candidates[:25]):
+            max_items = max(1, settings.CRAWL_MAX_ITEMS)
+            for idx, c in enumerate(candidates[: max_items * 3]):
                 # Extract title
                 title_tag = c.find(["h1", "h2", "h3", "h4", "h5", "a"])
                 if not title_tag:
@@ -232,6 +234,10 @@ class WebsiteAdapter(BaseSourceAdapter):
                 if pdf_urls and not media_list:
                     content_type = "pdf"
 
+                # Do not treat undated archive rows as "published today"
+                if is_stale_announcement(pub_date, lookback_days=settings.CRAWL_LOOKBACK_DAYS):
+                    continue
+
                 item = RawEvidenceItem(
                     source_id=self.source_id,
                     external_id=f"{self.source_id}-{idx}-{hash(canonical_link) % 1000000}",
@@ -239,7 +245,7 @@ class WebsiteAdapter(BaseSourceAdapter):
                     title_raw=title_text,
                     caption_raw=body_text[:500] if body_text else title_text,
                     body_raw=body_text,
-                    published_at=pub_date or datetime.now(timezone.utc),
+                    published_at=pub_date,
                     raw_payload={
                         "html_snippet": str(c)[:1500],
                         "pdf_urls": pdf_urls,
@@ -248,6 +254,8 @@ class WebsiteAdapter(BaseSourceAdapter):
                     media_items=media_list
                 )
                 items.append(item)
+                if len(items) >= max_items:
+                    break
 
         except Exception as e:
             logger.error(f"WebsiteAdapter failed for {self.source_url}: {e}")

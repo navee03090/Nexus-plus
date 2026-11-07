@@ -2,10 +2,11 @@
 Opportunity Events API Endpoints (Section 45, 46, 47, 80, 81).
 Public feeds, single opportunity detail with multi-source provenance, changes, bookmarking, and reporting.
 """
+from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_, desc, asc
+from sqlalchemy import select, func, or_, and_, desc, asc
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
@@ -19,6 +20,19 @@ from app.models.audit import OpportunityReport
 from app.algorithms.scoring import get_deadline_urgency
 
 router = APIRouter(prefix="/events", tags=["Opportunities"])
+
+
+def upcoming_only_clause():
+    """Hide closed/past events from the public feed."""
+    now = datetime.now(timezone.utc)
+    return or_(
+        Opportunity.registration_deadline >= now,
+        Opportunity.start_date >= now,
+        and_(
+            Opportunity.registration_deadline.is_(None),
+            Opportunity.start_date.is_(None),
+        ),
+    )
 
 
 def format_opp_read(
@@ -94,6 +108,7 @@ async def list_events(
     query = (
         select(Opportunity)
         .where(Opportunity.status.in_(["published", "updated"]))
+        .where(upcoming_only_clause())
         .options(selectinload(Opportunity.organization), selectinload(Opportunity.category))
     )
 
@@ -123,7 +138,11 @@ async def list_events(
     opps = res.scalars().all()
 
     # Count total
-    count_stmt = select(func.count(Opportunity.id)).where(Opportunity.status.in_(["published", "updated"]))
+    count_stmt = (
+        select(func.count(Opportunity.id))
+        .where(Opportunity.status.in_(["published", "updated"]))
+        .where(upcoming_only_clause())
+    )
     total_count = (await db.execute(count_stmt)).scalar() or 0
 
     items = []
@@ -178,6 +197,7 @@ async def get_recommended_events(
     query = (
         select(Opportunity)
         .where(Opportunity.status.in_(["published", "updated"]))
+        .where(upcoming_only_clause())
         .options(selectinload(Opportunity.organization), selectinload(Opportunity.category))
         .order_by(desc(Opportunity.featured), desc(Opportunity.trust_score), desc(Opportunity.published_at))
         .limit(limit)
