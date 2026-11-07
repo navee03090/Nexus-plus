@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { Lock, Mail, ArrowRight, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
@@ -39,12 +39,8 @@ export default function LoginPage() {
     }
   };
 
-  const demoLogin = (role: "student" | "admin") => {
-    if (role === "admin") {
-      router.push("/admin");
-    } else {
-      router.push("/for-you");
-    }
+  const demoLogin = () => {
+    router.push("/for-you");
   };
 
   return (
@@ -65,22 +61,13 @@ export default function LoginPage() {
           <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
             Instant Demo Access
           </span>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => demoLogin("student")}
-              className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-medium border border-indigo-500/30 transition-colors"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Student Profile</span>
-            </button>
-            <button
-              onClick={() => demoLogin("admin")}
-              className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-medium border border-emerald-500/30 transition-colors"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Admin Console</span>
-            </button>
-          </div>
+          <button
+            onClick={demoLogin}
+            className="w-full flex items-center justify-center gap-1.5 p-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-medium border border-indigo-500/30 transition-colors"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Student Profile</span>
+          </button>
         </div>
 
         {/* Traditional login form */}

@@ -256,15 +256,17 @@ export async function fetchAuditLogs(): Promise<any[]> {
   return [];
 }
 
-export async function fetchVerificationQueue(): Promise<VerificationItem[]> {
+export async function fetchVerificationQueue(): Promise<{ items: VerificationItem[]; error?: string }> {
   try {
-    const res = await fetchWithTimeout(`${getBase()}/admin/review`, { cache: "no-store" });
+    const res = await fetchWithTimeout(`${getBase()}/admin/review`, { cache: "no-store" }, 12000);
     if (res.ok) {
       const json = await res.json();
-      return json.data || [];
+      return { items: json.data || [] };
     }
-  } catch {}
-  return [];
+    return { items: [], error: `Review API returned ${res.status}` };
+  } catch {
+    return { items: [], error: "Could not reach the review API" };
+  }
 }
 
 export async function approveVerificationItem(queueId: string): Promise<{ success: boolean }> {

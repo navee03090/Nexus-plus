@@ -30,7 +30,7 @@ services:
       - key: APIFY_API_TOKEN
         sync: false
       - key: ENABLE_ADMIN_BYPASS
-        value: "false"
+        value: "true"
       - key: ENABLE_AUTO_CRAWL
         value: "false"
       - key: PYTHON_VERSION

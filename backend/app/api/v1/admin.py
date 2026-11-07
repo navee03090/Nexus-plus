@@ -105,9 +105,6 @@ async def list_verification_queue(
     res = await db.execute(stmt)
     items = []
     for q_item, opp, s_item in res.all():
-        if not opp and not s_item:
-            continue
-
         opp_data = {
             "id": opp.id if opp else q_item.opportunity_id,
             "title": opp.title if opp else (s_item.title_raw if s_item else "Opportunity Pending Verification"),

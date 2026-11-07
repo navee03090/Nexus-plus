@@ -23,11 +23,13 @@ export default function VerificationReviewPage() {
   const [items, setItems] = useState<VerificationItem[]>([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchVerificationQueue().then((data) => {
-      setItems(data);
+      setItems(data.items || []);
+      setLoadError(data.error || null);
       setIsLoading(false);
     });
   }, []);
@@ -70,12 +72,18 @@ export default function VerificationReviewPage() {
   if (!current) {
     return (
       <div className="max-w-4xl mx-auto py-16 text-center space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto">
-          <CheckCircle2 className="w-8 h-8" />
+        <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto ${
+          loadError
+            ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+            : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+        }`}>
+          {loadError ? <AlertTriangle className="w-8 h-8" /> : <CheckCircle2 className="w-8 h-8" />}
         </div>
-        <h2 className="text-xl font-bold text-white">Verification Queue Clear</h2>
+        <h2 className="text-xl font-bold text-white">
+          {loadError ? "Verification queue did not load" : "Verification Queue Clear"}
+        </h2>
         <p className="text-xs text-slate-400">
-          All ingested opportunities have passed deterministic validation and trust thresholds.
+          {loadError || "No pending items. The overview count is the number of rows still waiting."}
         </p>
       </div>
     );
