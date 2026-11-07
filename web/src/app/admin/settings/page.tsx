@@ -1,42 +1,26 @@
-import React from "react";
-import { FileText, ShieldCheck, Database, HardDrive, Key, Globe } from "lucide-react";
+"use client";
 
-const AUDIT_LOGS = [
-  {
-    id: "log-1",
-    action: "DEADLINE_EXTENSION_DETECTED",
-    entity: "KP AI & Cybersecurity Hackathon 2026",
-    actor: "system_change_detector",
-    details: "Extended deadline from 2026-10-12 to 2026-10-18 based on KPITB circular",
-    timestamp: "2026-10-03 11:00:00 PKT",
-  },
-  {
-    id: "log-2",
-    action: "DUPLICATE_MERGE",
-    entity: "NIC Peshawar Cohort 8",
-    actor: "system_deduplicator",
-    details: "Merged raw evidence s-item-02 into canonical event 00000001-0000-0000-0000-000000000002",
-    timestamp: "2026-10-02 14:30:00 PKT",
-  },
-  {
-    id: "log-3",
-    action: "MANUAL_APPROVAL",
-    entity: "GIKI Annual All-Pakistan Mathematics Olympiad",
-    actor: "admin_editorial",
-    details: "Approved event following flyer OCR verification",
-    timestamp: "2026-10-02 09:15:00 PKT",
-  },
-  {
-    id: "log-4",
-    action: "SOURCE_ADDED",
-    entity: "FAST-NUCES Peshawar Portal",
-    actor: "admin_editorial",
-    details: "Added adapter with parser_key fast_pwr and crawl_frequency 3600s",
-    timestamp: "2026-10-01 16:40:00 PKT",
-  },
-];
+import React, { useEffect, useState } from "react";
+import { FileText, ShieldCheck, HardDrive, Globe } from "lucide-react";
+import { fetchAuditLogs } from "@/lib/api";
+
+function formatWhen(value?: string | null) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString();
+}
 
 export default function AdminSettingsPage() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAuditLogs()
+      .then((data) => setLogs(data || []))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <div>
@@ -48,11 +32,10 @@ export default function AdminSettingsPage() {
           Audit Logs & Diagnostics
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Immutable audit trails of opportunity modifications, approvals, and crawl operations
+          Approvals, rejects, and admin actions written by the API. Empty until someone uses Review.
         </p>
       </div>
 
-      {/* System Settings & Invariants Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
           <div className="flex items-center gap-2 font-bold text-white">
@@ -70,35 +53,34 @@ export default function AdminSettingsPage() {
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
           <div className="flex items-center gap-2 font-bold text-white">
             <ShieldCheck className="w-4 h-4 text-indigo-400" />
-            <span>Model Invariants</span>
+            <span>Publish rules</span>
           </div>
           <div className="text-slate-400">
-            AI Engine: <span className="text-slate-200 font-mono">gemini-2.5-flash</span>
+            Auto-crawl: <span className="text-slate-200 font-mono">off</span>
           </div>
           <div className="text-slate-400">
-            Hallucination Mode: <span className="text-emerald-400 font-semibold font-mono">Zero Tolerated</span>
+            Weak extracts: <span className="text-amber-300 font-semibold font-mono">verification queue</span>
           </div>
         </div>
 
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
           <div className="flex items-center gap-2 font-bold text-white">
             <HardDrive className="w-4 h-4 text-cyan-400" />
-            <span>Storage & Embeddings</span>
+            <span>Listings</span>
           </div>
           <div className="text-slate-400">
-            Vector Dimension: <span className="text-slate-200 font-mono">768 (text-embedding-004)</span>
+            Public site reads: <span className="text-slate-200 font-mono">Supabase</span>
           </div>
           <div className="text-slate-400">
-            Index Method: <span className="text-slate-200 font-mono">HNSW Cosine</span>
+            Crawls & review: <span className="text-slate-200 font-mono">Render API</span>
           </div>
         </div>
       </div>
 
-      {/* Audit Log Table */}
       <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
         <div className="p-5 border-b border-slate-800 flex items-center justify-between">
           <h2 className="text-sm font-bold text-white">Audit Log Trail</h2>
-          <span className="text-xs text-slate-500 font-mono">Append-Only Immutable Records</span>
+          <span className="text-xs text-slate-500 font-mono">{logs.length} records</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
@@ -112,15 +94,35 @@ export default function AdminSettingsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80">
-              {AUDIT_LOGS.map((log) => (
+              {loading && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-slate-500">
+                    Loading audit logs…
+                  </td>
+                </tr>
+              )}
+              {!loading && logs.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-slate-500">
+                    No audit events yet.
+                  </td>
+                </tr>
+              )}
+              {logs.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-800/40 transition-colors">
                   <td className="px-6 py-4 font-mono font-semibold text-indigo-400 text-[11px]">
                     {log.action}
                   </td>
-                  <td className="px-6 py-4 font-medium text-white">{log.entity}</td>
-                  <td className="px-6 py-4 font-mono text-slate-400 text-[11px]">{log.actor}</td>
-                  <td className="px-6 py-4 text-slate-300 text-[11px]">{log.details}</td>
-                  <td className="px-6 py-4 font-mono text-slate-500 text-[11px]">{log.timestamp}</td>
+                  <td className="px-6 py-4 font-medium text-white">
+                    {log.entity_type} {log.entity_id ? String(log.entity_id).slice(0, 8) : ""}
+                  </td>
+                  <td className="px-6 py-4 font-mono text-slate-400 text-[11px]">
+                    {log.admin_user_id ? String(log.admin_user_id).slice(0, 8) : "system"}
+                  </td>
+                  <td className="px-6 py-4 text-slate-300 text-[11px]">
+                    {log.after_state ? JSON.stringify(log.after_state) : "—"}
+                  </td>
+                  <td className="px-6 py-4 font-mono text-slate-500 text-[11px]">{formatWhen(log.created_at)}</td>
                 </tr>
               ))}
             </tbody>

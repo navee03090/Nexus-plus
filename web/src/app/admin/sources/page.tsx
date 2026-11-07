@@ -22,130 +22,24 @@ import {
   Layers,
   Zap
 } from "lucide-react";
-import { testSourceCrawl, triggerSourceCrawl, createAdminSource, triggerApifyScrape, syncApifyRun, checkApifyRunStatus, fetchSources } from "@/lib/api";
+import { testSourceCrawl, triggerSourceCrawl, createAdminSource, triggerApifyScrape, syncApifyRun, checkApifyRunStatus, fetchAdminSources } from "@/lib/api";
 
-const MONITORED_SOURCES = [
-  {
-    id: "src-nccs-01",
-    name: "Pakistan Cybersecurity Challenge (NCCS Air University)",
-    platform: "Government & Academic Portal",
-    category: "web",
-    url: "https://pakistancybersecuritychallenge.nccs.pk",
-    parser_key: "nccs_cybersecurity_challenge",
-    crawl_frequency: 1800,
-    trust_score: 0.99,
-    status: "active",
-    last_checked_at: "Just now",
-  },
-  {
-    id: "src-uet-01",
-    name: "UET Peshawar Official Portal",
-    platform: "University Website",
-    category: "web",
-    url: "https://www.uetpeshawar.edu.pk/student-notice-board",
-    parser_key: "uet_peshawar_events",
-    crawl_frequency: 3600,
-    trust_score: 0.95,
-    status: "active",
-    last_checked_at: "10 mins ago",
-  },
-  {
-    id: "src-02",
-    name: "KPITB Announcements",
-    platform: "Government Portal",
-    category: "web",
-    url: "https://www.kpitb.gov.pk",
-    parser_key: "kpitb_portal",
-    crawl_frequency: 1800,
-    trust_score: 0.98,
-    status: "active",
-    last_checked_at: "15 mins ago",
-  },
-  {
-    id: "src-soc-01",
-    name: "KPITB Official Facebook Page",
-    platform: "Facebook (Meta / Apify)",
-    category: "social",
-    url: "https://www.facebook.com/kpitbgov",
-    parser_key: "apify_facebook_crawler",
-    crawl_frequency: 1800,
-    trust_score: 0.96,
-    status: "active",
-    last_checked_at: "5 mins ago",
-  },
-  {
-    id: "src-03",
-    name: "NIC Peshawar Incubation",
-    platform: "Incubator Portal",
-    category: "web",
-    url: "https://nicpeshawar.pk",
-    parser_key: "nic_peshawar",
-    crawl_frequency: 7200,
-    trust_score: 0.92,
-    status: "active",
-    last_checked_at: "25 mins ago",
-  },
-  {
-    id: "src-soc-02",
-    name: "NIC Peshawar Facebook Community",
-    platform: "Facebook (Meta / Apify)",
-    category: "social",
-    url: "https://www.facebook.com/nicpeshawar",
-    parser_key: "apify_facebook_crawler",
-    crawl_frequency: 3600,
-    trust_score: 0.94,
-    status: "active",
-    last_checked_at: "12 mins ago",
-  },
-  {
-    id: "src-soc-03",
-    name: "GDG Peshawar Instagram",
-    platform: "Instagram (Apify)",
-    category: "social",
-    url: "https://www.instagram.com/gdgpeshawar",
-    parser_key: "apify_instagram_crawler",
-    crawl_frequency: 3600,
-    trust_score: 0.93,
-    status: "active",
-    last_checked_at: "18 mins ago",
-  },
-  {
-    id: "src-04",
-    name: "GIKI Competitions & Hackathons",
-    platform: "University Website",
-    category: "web",
-    url: "https://giki.edu.pk",
-    parser_key: "giki_events",
-    crawl_frequency: 3600,
-    trust_score: 0.94,
-    status: "active",
-    last_checked_at: "1 hour ago",
-  },
-  {
-    id: "src-05",
-    name: "HEC Pakistan Scholarships",
-    platform: "Government Registry",
-    category: "web",
-    url: "https://www.hec.gov.pk",
-    parser_key: "hec_scholarships",
-    crawl_frequency: 86400,
-    trust_score: 0.99,
-    status: "active",
-    last_checked_at: "2 hours ago",
-  },
-  {
-    id: "src-06",
-    name: "FAST-NUCES Peshawar",
-    platform: "University Website",
-    category: "web",
-    url: "https://www.nu.edu.pk",
-    parser_key: "fast_pwr",
-    crawl_frequency: 3600,
-    trust_score: 0.91,
-    status: "active",
-    last_checked_at: "45 mins ago",
-  },
-];
+function mapSourceRow(bs: any) {
+  return {
+    id: bs.id,
+    name: bs.name,
+    platform: bs.platform || "Portal",
+    category: (bs.source_type || "").toLowerCase() === "social" ? "social" : "web",
+    url: bs.url,
+    parser_key: bs.parser_key || "generic",
+    crawl_frequency: bs.crawl_frequency || 3600,
+    trust_score: bs.trust_score || 0.85,
+    status: bs.status || "active",
+    last_checked_at: bs.last_checked_at
+      ? new Date(bs.last_checked_at).toLocaleString()
+      : "Never crawled",
+  };
+}
 
 const APIFY_PRESETS = [
   {
@@ -181,7 +75,8 @@ const APIFY_PRESETS = [
 ];
 
 export default function SourcesPage() {
-  const [sources, setSources] = useState(MONITORED_SOURCES);
+  const [sources, setSources] = useState<ReturnType<typeof mapSourceRow>[]>([]);
+  const [sourcesLoading, setSourcesLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<"all" | "web" | "social">("all");
   const [origin, setOrigin] = useState("http://localhost:3000");
   const [mounted, setMounted] = useState(false);
@@ -191,23 +86,11 @@ export default function SourcesPage() {
     if (typeof window !== "undefined") {
       setOrigin(window.location.origin);
     }
-    fetchSources().then((backendSources) => {
-      if (backendSources && backendSources.length > 0) {
-        const mapped = backendSources.map((bs: any) => ({
-          id: bs.id,
-          name: bs.name,
-          platform: bs.platform || "Portal",
-          category: (bs.source_type || "").toLowerCase() === "social" ? "social" : "web",
-          url: bs.url,
-          parser_key: bs.parser_key || "generic",
-          crawl_frequency: bs.crawl_frequency || 3600,
-          trust_score: bs.trust_score || 0.95,
-          status: bs.status || "active",
-          last_checked_at: bs.last_checked_at ? new Date(bs.last_checked_at).toLocaleTimeString() : "Pending crawl",
-        }));
-        setSources(mapped);
-      }
-    });
+    fetchAdminSources()
+      .then((backendSources) => {
+        setSources((backendSources || []).map(mapSourceRow));
+      })
+      .finally(() => setSourcesLoading(false));
   }, []);
   
   // Simulator modal state
@@ -442,8 +325,8 @@ export default function SourcesPage() {
               <div>
                 <h2 className="text-sm font-bold text-white flex items-center gap-2">
                   <span>Meta Official Webhooks</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    Live Active
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-700/60 text-slate-300 border border-slate-600">
+                    Needs Meta app review
                   </span>
                 </h2>
                 <p className="text-[11px] text-slate-400">
@@ -691,7 +574,7 @@ export default function SourcesPage() {
         </div>
 
         <span className="text-xs text-slate-500">
-          Auto-polling active with exponential backoff
+          Manual crawl only — auto-crawl is off
         </span>
       </div>
 
@@ -711,6 +594,20 @@ export default function SourcesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80">
+              {sourcesLoading && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-10 text-center text-slate-500">
+                    Loading sources from the API…
+                  </td>
+                </tr>
+              )}
+              {!sourcesLoading && filteredSources.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-10 text-center text-slate-500">
+                    No sources in the database yet. Use Add Monitored Source, then Crawl Now.
+                  </td>
+                </tr>
+              )}
               {filteredSources.map((src) => (
                 <tr key={src.id} className="hover:bg-slate-800/40 transition-colors">
                   <td className="px-6 py-4">

@@ -31,5 +31,9 @@ services:
         sync: false
       - key: ENABLE_ADMIN_BYPASS
         value: "false"
+      - key: ENABLE_AUTO_CRAWL
+        value: "false"
+      - key: PYTHON_VERSION
+        value: "3.12.8"
       - key: DATABASE_URL
         sync: false

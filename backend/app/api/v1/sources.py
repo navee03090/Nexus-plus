@@ -54,6 +54,9 @@ async def list_public_sources(db: AsyncSession = Depends(get_db)):
             "url": s.url,
             "status": s.status,
             "trust_score": s.trust_score,
+            "parser_key": s.parser_key,
+            "crawl_frequency": s.crawl_frequency,
+            "is_active": s.is_active,
             "organization_name": s.organization.name if s.organization else None,
             "last_checked_at": s.last_checked_at,
         })

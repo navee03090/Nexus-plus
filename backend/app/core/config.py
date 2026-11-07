@@ -47,7 +47,10 @@ class Settings(BaseSettings):
     LOCAL_AI_BASE_URL: Optional[str] = None
     LOCAL_AI_MODEL: str = "llama3.2"
     LOCAL_AI_API_KEY: str = "not-needed"
-    LOCAL_AI_TIMEOUT: float = 60.0
+    LOCAL_AI_TIMEOUT: float = 180.0
+
+    # In-process crawler (Render has no Celery). Off until quality gates + Qwen are ready.
+    ENABLE_AUTO_CRAWL: bool = False
 
     # Backward-compatibility defaults
     GEMINI_API_KEY: Optional[str] = None

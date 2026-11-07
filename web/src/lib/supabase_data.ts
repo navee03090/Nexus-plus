@@ -220,20 +220,22 @@ export async function fetchCategoriesFromSupabase(): Promise<Category[]> {
 
 export async function fetchStatsFromSupabase() {
   try {
-    const [published, allOpps, orgs] = await Promise.all([
+    const [published, allOpps, sources, pending] = await Promise.all([
       restCount("opportunities", "status=in.(published,updated)"),
       restCount("opportunities"),
-      restCount("organizations"),
+      restCount("sources"),
+      restCount("verification_queue", "status=eq.pending"),
     ]);
     return {
-      sources_monitored: orgs,
-      active_sources: orgs,
+      sources_monitored: sources,
+      active_sources: sources,
       failed_sources: 0,
       opportunities_discovered: allOpps,
       opportunities_published: published,
-      pending_verification: 0,
+      pending_verification: pending,
       duplicates_resolved: 0,
-      ai_extraction_success_rate: 0.985,
+      ai_extraction_success_rate: 0,
+      auto_crawl: false,
       system_health: "Healthy",
     };
   } catch {

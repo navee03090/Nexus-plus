@@ -1,67 +1,26 @@
 "use client";
 
-import React from "react";
-import { Database, CheckCircle2, Clock, AlertCircle, RefreshCw } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Database, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { fetchIngestionRuns } from "@/lib/api";
 
-const RECENT_RUNS = [
-  {
-    id: "run-001",
-    source: "KPITB Press Announcements",
-    type: "website",
-    items_discovered: 3,
-    items_created: 1,
-    duplicates_detected: 2,
-    status: "completed",
-    duration: "4.2s",
-    timestamp: "12 mins ago",
-  },
-  {
-    id: "run-002",
-    source: "UET Peshawar Events Portal",
-    type: "website",
-    items_discovered: 2,
-    items_created: 1,
-    duplicates_detected: 1,
-    status: "completed",
-    duration: "3.8s",
-    timestamp: "24 mins ago",
-  },
-  {
-    id: "run-003",
-    source: "NIC Peshawar Cohort Feed",
-    type: "api",
-    items_discovered: 1,
-    items_created: 1,
-    duplicates_detected: 0,
-    status: "completed",
-    duration: "1.9s",
-    timestamp: "45 mins ago",
-  },
-  {
-    id: "run-004",
-    source: "GIKI Competitions RSS",
-    type: "rss",
-    items_discovered: 2,
-    items_created: 1,
-    duplicates_detected: 1,
-    status: "completed",
-    duration: "2.1s",
-    timestamp: "1 hour ago",
-  },
-  {
-    id: "run-005",
-    source: "HEC Pakistan Scholarship Gazette",
-    type: "website",
-    items_discovered: 4,
-    items_created: 2,
-    duplicates_detected: 2,
-    status: "completed",
-    duration: "6.5s",
-    timestamp: "2 hours ago",
-  },
-];
+function formatWhen(value?: string | null) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString();
+}
 
 export default function IngestionRunsPage() {
+  const [runs, setRuns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchIngestionRuns()
+      .then((data) => setRuns(data || []))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <div>
@@ -73,7 +32,7 @@ export default function IngestionRunsPage() {
           Ingestion Runs & Evidence Logs
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Audit history of scheduled crawler executions and raw evidence ingestion runs
+          Real crawl history from the API. Empty until you click Crawl Now on a source.
         </p>
       </div>
 
@@ -84,33 +43,64 @@ export default function IngestionRunsPage() {
               <tr>
                 <th className="px-6 py-4">Run ID & Source</th>
                 <th className="px-6 py-4">Discovered</th>
-                <th className="px-6 py-4">New Canonical</th>
-                <th className="px-6 py-4">Duplicates Merged</th>
+                <th className="px-6 py-4">Processed</th>
+                <th className="px-6 py-4">Duplicates</th>
                 <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4">Duration</th>
                 <th className="px-6 py-4">Executed</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80">
-              {RECENT_RUNS.map((run) => (
-                <tr key={run.id} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="font-semibold text-white">{run.source}</div>
-                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">{run.id}</div>
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-10 text-center text-slate-500">
+                    Loading crawl runs…
                   </td>
-                  <td className="px-6 py-4 font-mono">{run.items_discovered}</td>
-                  <td className="px-6 py-4 font-mono text-emerald-400 font-semibold">{run.items_created}</td>
-                  <td className="px-6 py-4 font-mono text-cyan-400">{run.duplicates_detected}</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>Success</span>
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 font-mono text-slate-400">{run.duration}</td>
-                  <td className="px-6 py-4 text-slate-400 font-mono text-[11px]">{run.timestamp}</td>
                 </tr>
-              ))}
+              )}
+              {!loading && runs.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-10 text-center text-slate-500">
+                    No ingestion runs yet.
+                  </td>
+                </tr>
+              )}
+              {runs.map((run) => {
+                const ok = run.status === "success" || run.status === "completed";
+                return (
+                  <tr key={run.id} className="hover:bg-slate-800/40 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-semibold text-white">{run.source}</div>
+                      <div className="text-[11px] text-slate-500 font-mono mt-0.5">{run.id}</div>
+                      {run.error_message && (
+                        <div className="text-[11px] text-amber-400 mt-1 max-w-xs truncate">{run.error_message}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 font-mono">{run.items_found ?? 0}</td>
+                    <td className="px-6 py-4 font-mono text-emerald-400 font-semibold">{run.items_processed ?? 0}</td>
+                    <td className="px-6 py-4 font-mono text-cyan-400">{run.items_duplicated ?? 0}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
+                        ok
+                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                          : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                      }`}>
+                        {ok ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                        <span>{run.status}</span>
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-mono text-slate-400">
+                      {run.duration_seconds != null ? `${run.duration_seconds}s` : "—"}
+                    </td>
+                    <td className="px-6 py-4 text-slate-400 font-mono text-[11px]">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatWhen(run.started_at)}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

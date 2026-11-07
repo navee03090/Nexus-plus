@@ -171,6 +171,19 @@ export async function fetchCategories(): Promise<Category[]> {
   ];
 }
 
+const EMPTY_ADMIN_STATS = {
+  sources_monitored: 0,
+  active_sources: 0,
+  failed_sources: 0,
+  opportunities_discovered: 0,
+  opportunities_published: 0,
+  pending_verification: 0,
+  duplicates_resolved: 0,
+  ai_extraction_success_rate: 0,
+  auto_crawl: false,
+  system_health: "Degraded",
+};
+
 export async function fetchAdminStats() {
   try {
     const live = await fetchStatsFromSupabase();
@@ -185,17 +198,62 @@ export async function fetchAdminStats() {
       return json.data;
     }
   } catch {}
-  return {
-    sources_monitored: 0,
-    active_sources: 0,
-    failed_sources: 0,
-    opportunities_discovered: 0,
-    opportunities_published: 0,
-    pending_verification: 0,
-    duplicates_resolved: 0,
-    ai_extraction_success_rate: 0,
-    system_health: "Degraded",
-  };
+  return { ...EMPTY_ADMIN_STATS };
+}
+
+export async function fetchLiveAdminStats() {
+  try {
+    const res = await fetchWithTimeout(`${getBase()}/admin/stats`, { cache: "no-store" }, 8000);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data) return json.data;
+    }
+  } catch {}
+  return fetchAdminStats();
+}
+
+export async function fetchDetailedHealth() {
+  try {
+    const res = await fetchWithTimeout(`${getBase()}/health/detailed`, { cache: "no-store" }, 8000);
+    if (res.ok) {
+      const json = await res.json();
+      return json.data || null;
+    }
+  } catch {}
+  return null;
+}
+
+export async function fetchAdminSources(): Promise<any[]> {
+  try {
+    const res = await fetchWithTimeout(`${getBase()}/admin/sources`, { cache: "no-store" }, 8000);
+    if (res.ok) {
+      const json = await res.json();
+      if (Array.isArray(json.data)) return json.data;
+    }
+  } catch {}
+  return fetchSources();
+}
+
+export async function fetchIngestionRuns(): Promise<any[]> {
+  try {
+    const res = await fetchWithTimeout(`${getBase()}/admin/ingestion/runs`, { cache: "no-store" }, 8000);
+    if (res.ok) {
+      const json = await res.json();
+      return json.data || [];
+    }
+  } catch {}
+  return [];
+}
+
+export async function fetchAuditLogs(): Promise<any[]> {
+  try {
+    const res = await fetchWithTimeout(`${getBase()}/admin/audit-logs`, { cache: "no-store" }, 8000);
+    if (res.ok) {
+      const json = await res.json();
+      return json.data || [];
+    }
+  } catch {}
+  return [];
 }
 
 export async function fetchVerificationQueue(): Promise<VerificationItem[]> {
@@ -405,7 +463,7 @@ export async function checkApifyRunStatus(
 
 export async function fetchSources(): Promise<any[]> {
   try {
-    const res = await fetch(`${getBase()}/sources`);
+    const res = await fetchWithTimeout(`${getBase()}/sources`, { cache: "no-store" }, 8000);
     if (!res.ok) return [];
     const json = await res.json();
     return json.data || [];

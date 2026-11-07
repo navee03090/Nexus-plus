@@ -32,7 +32,12 @@ async def health_check():
 async def detailed_health_check(db: AsyncSession = Depends(get_db)):
     ai_provider = get_ai_provider()
     ai_diag = ai_provider.get_diagnostics()
-    has_any_key = ai_provider.gemini.has_valid_api_key or ai_provider.groq.has_valid_api_key
+    local_configured = bool(settings.LOCAL_AI_BASE_URL)
+    has_any_key = (
+        ai_provider.gemini.has_valid_api_key
+        or ai_provider.groq.has_valid_api_key
+        or local_configured
+    )
 
     diagnostics: Dict[str, Any] = {
         "database": {"status": "unknown"},
@@ -44,6 +49,16 @@ async def detailed_health_check(db: AsyncSession = Depends(get_db)):
             "model": ai_diag.get("active_model"),
             "gemini": ai_diag.get("gemini"),
             "groq": ai_diag.get("groq"),
+            "local": {
+                "configured": local_configured,
+                "base_url": settings.LOCAL_AI_BASE_URL,
+                "model": settings.LOCAL_AI_MODEL,
+            },
+        },
+        "crawler": {
+            "status": "healthy",
+            "auto_crawl": settings.ENABLE_AUTO_CRAWL,
+            "mode": "scheduled" if settings.ENABLE_AUTO_CRAWL else "manual",
         },
         "storage": {"status": "healthy", "bucket": settings.STORAGE_BUCKET},
     }

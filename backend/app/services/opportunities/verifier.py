@@ -26,6 +26,7 @@ class OpportunityVerifier:
         (composite_trust_score, verification_status, lifecycle_status, requires_human_review)
         """
         data = validation_result.validated_data
+        title = (data.get("title") or "").strip()
         has_url = bool(data.get("registration_url") or data.get("application_url"))
         has_dates = bool(data.get("start_date") or data.get("registration_deadline"))
 
@@ -41,7 +42,16 @@ class OpportunityVerifier:
         review_reason = ""
 
         # Check conditions requiring human review
-        if validation_result.status == "flagged":
+        if validation_result.status == "invalid":
+            requires_review = True
+            review_reason = "Extraction failed validation: " + "; ".join(validation_result.warnings)
+        elif len(title) < 8:
+            requires_review = True
+            review_reason = "Title too short or missing for auto-publish"
+        elif not has_url and not has_dates:
+            requires_review = True
+            review_reason = "Missing apply URL and dates — send to verification queue"
+        elif validation_result.status == "flagged":
             requires_review = True
             review_reason = "Deterministic validation warnings: " + "; ".join(validation_result.warnings)
         elif trust_score < cls.AUTO_PUBLISH_TRUST_THRESHOLD:

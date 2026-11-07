@@ -28,8 +28,10 @@ from app.api.v1.ingestion_social import router as social_router
 
 async def periodic_crawler_scheduler():
     """Background loop that autonomously checks and runs due crawlers every 5 minutes."""
+    if not settings.ENABLE_AUTO_CRAWL:
+        logger.info("Auto-crawler disabled (ENABLE_AUTO_CRAWL=false). Use admin Crawl Now.")
+        return
     logger.info("Autonomous Portal Crawler Scheduler initialized.")
-    # Wait 15 seconds after boot to let initial startup settle
     await asyncio.sleep(15)
     while True:
         try:
@@ -42,7 +44,6 @@ async def periodic_crawler_scheduler():
             break
         except Exception as e:
             logger.error(f"Error in crawler scheduler loop: {e}")
-        # Sleep 5 minutes before next polling sweep
         await asyncio.sleep(300)
 
 
@@ -131,18 +132,21 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Baseline seed skipped: {e}")
 
-    # Start autonomous background crawler task
-    crawler_task = asyncio.create_task(periodic_crawler_scheduler())
+    crawler_task = None
+    if settings.ENABLE_AUTO_CRAWL:
+        crawler_task = asyncio.create_task(periodic_crawler_scheduler())
+    else:
+        logger.info("Skipping background crawler. Manual crawl via /admin/sources remains available.")
 
     yield
 
-    # Shutdown
     logger.info("NEXUS PULSE backend shutting down cleanly.")
-    crawler_task.cancel()
-    try:
-        await crawler_task
-    except asyncio.CancelledError:
-        pass
+    if crawler_task:
+        crawler_task.cancel()
+        try:
+            await crawler_task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(

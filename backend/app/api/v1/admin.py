@@ -35,6 +35,7 @@ async def get_valid_admin_user_id(db: AsyncSession, admin_claims: Optional[Dict[
     return None
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.core.security import require_admin
 from app.models.opportunity import Opportunity, OpportunitySource
 from app.models.source import Source
@@ -63,6 +64,10 @@ async def get_admin_dashboard_stats(
     total_sources_linked = (await db.execute(select(func.count(OpportunitySource.id)))).scalar() or 0
     duplicates_resolved = max(0, total_sources_linked - total_opps)
 
+    runs_ok = (await db.execute(select(func.count(IngestionRun.id)).where(IngestionRun.status == "success"))).scalar() or 0
+    runs_all = (await db.execute(select(func.count(IngestionRun.id)))).scalar() or 0
+    extraction_rate = (runs_ok / runs_all) if runs_all else 0.0
+
     return {
         "data": {
             "sources_monitored": total_sources,
@@ -72,7 +77,9 @@ async def get_admin_dashboard_stats(
             "opportunities_published": published_opps,
             "pending_verification": pending_review,
             "duplicates_resolved": duplicates_resolved,
-            "ai_extraction_success_rate": 0.985,
+            "ai_extraction_success_rate": round(extraction_rate, 3),
+            "ingestion_runs": runs_all,
+            "auto_crawl": settings.ENABLE_AUTO_CRAWL,
             "system_health": "Healthy" if failing_sources == 0 else "Warning",
         }
     }
@@ -218,6 +225,25 @@ async def reject_queue_item(
     return {"data": {"rejected": True}}
 
 
+def _serialize_source(s: Source) -> Dict[str, Any]:
+    return {
+        "id": s.id,
+        "name": s.name,
+        "source_type": s.source_type,
+        "platform": s.platform,
+        "url": s.url,
+        "parser_key": s.parser_key,
+        "crawl_frequency": s.crawl_frequency,
+        "trust_score": s.trust_score,
+        "status": s.status,
+        "is_active": s.is_active,
+        "consecutive_failures": s.consecutive_failures,
+        "last_checked_at": s.last_checked_at,
+        "last_success_at": s.last_success_at,
+        "last_failure_at": s.last_failure_at,
+    }
+
+
 @router.get("/sources")
 async def list_admin_sources(
     db: AsyncSession = Depends(get_db),
@@ -226,7 +252,7 @@ async def list_admin_sources(
     """Lists all monitored sources with operational stats for admin control plane."""
     stmt = select(Source).order_by(desc(Source.trust_score))
     res = await db.execute(stmt)
-    return {"data": res.scalars().all()}
+    return {"data": [_serialize_source(s) for s in res.scalars().all()]}
 
 
 @router.post("/sources")
@@ -325,9 +351,35 @@ async def list_ingestion_runs(
     db: AsyncSession = Depends(get_db),
     admin_claims: Dict[str, Any] = Depends(require_admin)
 ):
-    stmt = select(IngestionRun).order_by(desc(IngestionRun.started_at)).limit(30)
+    stmt = (
+        select(IngestionRun, Source.name)
+        .outerjoin(Source, IngestionRun.source_id == Source.id)
+        .order_by(desc(IngestionRun.started_at))
+        .limit(50)
+    )
     res = await db.execute(stmt)
-    return {"data": res.scalars().all()}
+    rows = []
+    for run, source_name in res.all():
+        started = run.started_at
+        completed = run.completed_at
+        duration_s = None
+        if started and completed:
+            duration_s = round((completed - started).total_seconds(), 1)
+        rows.append({
+            "id": run.id,
+            "source_id": run.source_id,
+            "source": source_name or "Unknown source",
+            "status": run.status,
+            "items_found": run.items_found,
+            "items_processed": run.items_processed,
+            "items_duplicated": run.items_duplicated,
+            "items_rejected": run.items_rejected,
+            "error_message": run.error_message,
+            "started_at": started,
+            "completed_at": completed,
+            "duration_seconds": duration_s,
+        })
+    return {"data": rows}
 
 
 @router.get("/audit-logs")
@@ -338,4 +390,15 @@ async def list_audit_logs(
 ):
     stmt = select(AuditLog).order_by(desc(AuditLog.created_at)).limit(50)
     res = await db.execute(stmt)
-    return {"data": res.scalars().all()}
+    logs = []
+    for log in res.scalars().all():
+        logs.append({
+            "id": log.id,
+            "action": log.action,
+            "entity_type": log.entity_type,
+            "entity_id": log.entity_id,
+            "admin_user_id": log.admin_user_id,
+            "after_state": log.after_state,
+            "created_at": log.created_at,
+        })
+    return {"data": logs}
