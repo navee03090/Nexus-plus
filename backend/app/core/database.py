@@ -44,7 +44,14 @@ connect_args: dict = {}
 if is_sqlite:
     connect_args = {"check_same_thread": False}
 elif "supabase.com" in settings.DATABASE_URL or settings.APP_ENV == "production":
-    connect_args = {"ssl": True}
+    # Supabase pooler presents a chain Python 3.14 rejects as self-signed.
+    # Encrypt the connection without failing the handshake on that chain.
+    import ssl
+
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    connect_args = {"ssl": ssl_context}
 
 engine = create_async_engine(
     settings.DATABASE_URL,
