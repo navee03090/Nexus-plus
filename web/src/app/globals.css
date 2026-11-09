@@ -60,6 +60,74 @@
   .np-chip-active {
     @apply border-np-accent/40 bg-np-accent/15 text-np-accent hover:border-np-accent/50 hover:text-[#7aadff];
   }
+
+  .np-fade-up {
+    opacity: 0;
+    animation: np-fade-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .np-delay-1 {
+    animation-delay: 0.08s;
+  }
+  .np-delay-2 {
+    animation-delay: 0.16s;
+  }
+  .np-delay-3 {
+    animation-delay: 0.24s;
+  }
+  .np-delay-4 {
+    animation-delay: 0.32s;
+  }
+  .np-delay-5 {
+    animation-delay: 0.4s;
+  }
+
+  .np-stagger > * {
+    opacity: 0;
+    animation: np-fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .np-stagger > *:nth-child(1) {
+    animation-delay: 0.04s;
+  }
+  .np-stagger > *:nth-child(2) {
+    animation-delay: 0.1s;
+  }
+  .np-stagger > *:nth-child(3) {
+    animation-delay: 0.16s;
+  }
+  .np-stagger > *:nth-child(4) {
+    animation-delay: 0.22s;
+  }
+  .np-stagger > *:nth-child(5) {
+    animation-delay: 0.28s;
+  }
+  .np-stagger > *:nth-child(6) {
+    animation-delay: 0.34s;
+  }
+  .np-stagger > *:nth-child(7) {
+    animation-delay: 0.4s;
+  }
+  .np-stagger > *:nth-child(8) {
+    animation-delay: 0.46s;
+  }
+  .np-stagger > *:nth-child(9) {
+    animation-delay: 0.52s;
+  }
+  .np-stagger > *:nth-child(n + 10) {
+    animation-delay: 0.58s;
+  }
+}
+
+@keyframes np-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Legacy aliases — keep until remaining pages migrate */
@@ -100,5 +168,11 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .np-fade-up,
+  .np-stagger > * {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

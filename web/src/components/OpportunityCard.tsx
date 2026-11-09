@@ -54,7 +54,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
   const deadline = opportunity.registration_deadline;
 
   return (
-    <article className="group relative flex flex-col rounded-np-lg border border-np-border bg-np-surface overflow-hidden np-panel-hover">
+    <article className="group relative flex flex-col rounded-np-lg border border-np-border bg-np-surface overflow-hidden np-panel-hover hover:-translate-y-0.5 hover:shadow-np transition-[border-color,background-color,transform,box-shadow] duration-200">
       <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-np-accent/70 group-hover:bg-np-accent transition-colors" />
 
       {opportunity.flyer_url && (

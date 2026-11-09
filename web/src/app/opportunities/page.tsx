@@ -333,7 +333,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="np-stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {items.map((opp) => (
               <OpportunityCard key={opp.id} opportunity={opp} showMatchScore={false} />
             ))}

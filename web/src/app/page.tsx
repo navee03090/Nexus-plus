@@ -10,6 +10,7 @@ import {
   Layers,
 } from "lucide-react";
 import { OpportunityCard } from "@/components/OpportunityCard";
+import { StatsCounters } from "@/components/StatsCounters";
 import { fetchOpportunities, fetchAdminStats, fetchCategories } from "@/lib/api";
 
 export const revalidate = 60;
@@ -29,20 +30,20 @@ export default async function HomePage() {
         <div className="absolute inset-0 pointer-events-none -z-10 bg-[radial-gradient(ellipse_at_top,_rgba(61,139,255,0.08),_transparent_55%)]" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-sm font-semibold tracking-wide text-np-accent mb-4">
+          <p className="np-fade-up text-sm font-semibold tracking-wide text-np-accent mb-4">
             NexusPulse
           </p>
 
-          <h1 className="text-4xl sm:text-5xl md:text-[3.25rem] font-bold text-np-text tracking-tight max-w-3xl mx-auto leading-[1.15] mb-5">
+          <h1 className="np-fade-up np-delay-1 text-4xl sm:text-5xl md:text-[3.25rem] font-bold text-np-text tracking-tight max-w-3xl mx-auto leading-[1.15] mb-5">
             Find verified opportunities across Pakistan
           </h1>
 
-          <p className="text-base sm:text-lg text-np-muted max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="np-fade-up np-delay-2 text-base sm:text-lg text-np-muted max-w-2xl mx-auto mb-10 leading-relaxed">
             Scholarships, hackathons, fellowships, incubators, and research programs —
             sourced from official portals and confirmed before they go live.
           </p>
 
-          <div className="max-w-2xl mx-auto mb-8">
+          <div className="np-fade-up np-delay-3 max-w-2xl mx-auto mb-8">
             <form action="/opportunities" method="GET" className="relative flex items-center">
               <Search className="absolute left-4 w-5 h-5 text-np-faint pointer-events-none" />
               <input
@@ -76,7 +77,7 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="np-fade-up np-delay-4 flex flex-wrap items-center justify-center gap-3">
             <Link href="/opportunities" className="np-btn-primary px-6">
               <span>Explore opportunities</span>
               <ArrowRight className="w-4 h-4" />
@@ -87,30 +88,32 @@ export default async function HomePage() {
 
       <section className="bg-np-surface/60 border-b border-np-border py-7">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
-            <div className="p-3">
-              <div className="text-2xl sm:text-3xl font-bold text-np-text tabular-nums">
-                {stats.sources_monitored ?? 0}+
-              </div>
-              <div className="text-sm text-np-muted mt-1">Sources monitored</div>
-            </div>
-            <div className="p-3">
-              <div className="text-2xl sm:text-3xl font-bold text-np-verify tabular-nums">
-                {stats.opportunities_published ?? 0}
-              </div>
-              <div className="text-sm text-np-muted mt-1">Published opportunities</div>
-            </div>
-            <div className="p-3">
-              <div className="text-2xl sm:text-3xl font-bold text-np-accent tabular-nums">
-                {stats.duplicates_resolved ?? 0}
-              </div>
-              <div className="text-sm text-np-muted mt-1">Duplicates merged</div>
-            </div>
-            <div className="p-3">
-              <div className="text-2xl sm:text-3xl font-bold text-np-online tabular-nums">100%</div>
-              <div className="text-sm text-np-muted mt-1">Source-backed listings</div>
-            </div>
-          </div>
+          <StatsCounters
+            items={[
+              {
+                value: stats.sources_monitored ?? 0,
+                suffix: "+",
+                label: "Sources monitored",
+                colorClass: "text-np-text",
+              },
+              {
+                value: stats.opportunities_published ?? 0,
+                label: "Published opportunities",
+                colorClass: "text-np-verify",
+              },
+              {
+                value: stats.duplicates_resolved ?? 0,
+                label: "Duplicates merged",
+                colorClass: "text-np-accent",
+              },
+              {
+                value: 100,
+                suffix: "%",
+                label: "Source-backed listings",
+                colorClass: "text-np-online",
+              },
+            ]}
+          />
         </div>
       </section>
 
@@ -121,7 +124,7 @@ export default async function HomePage() {
             View all →
           </Link>
         </div>
-        <div className="flex items-center gap-2.5 overflow-x-auto pb-2">
+        <div className="np-stagger flex items-center gap-2.5 overflow-x-auto pb-2">
           {categories.map((cat) => (
             <Link
               key={cat.id}
@@ -135,7 +138,7 @@ export default async function HomePage() {
       </section>
 
       <section className="py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-1">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-8">
+        <div className="np-fade-up flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-8">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-np-text tracking-tight">
               Latest verified opportunities
@@ -158,7 +161,7 @@ export default async function HomePage() {
             <p className="text-sm text-np-muted">No active opportunities found yet. Check back soon.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="np-stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {featuredList.map((opp) => (
               <OpportunityCard key={opp.id} opportunity={opp} showMatchScore={false} />
             ))}
