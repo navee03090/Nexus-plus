@@ -269,18 +269,98 @@ export async function fetchVerificationQueue(): Promise<{ items: VerificationIte
   }
 }
 
-export async function approveVerificationItem(queueId: string): Promise<{ success: boolean }> {
+export interface ReviewCorrection {
+  title?: string;
+  summary?: string;
+  description?: string;
+  category_name?: string;
+  organization_name?: string;
+  city?: string;
+  venue?: string;
+  is_online?: boolean;
+  start_date?: string;
+  registration_deadline?: string;
+  registration_url?: string;
+  eligibility_summary?: string;
+  contact_email?: string;
+}
+
+export interface ReviewWriteResult {
+  success: boolean;
+  error?: string;
+  fields?: string[];
+  opportunity?: Partial<Opportunity>;
+  flyer_url?: string;
+}
+
+export function mediaUrl(path?: string | null): string | null {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  const origin = getBase().replace(/\/api\/v1\/?$/, "");
+  return `${origin}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+async function readReviewError(res: Response): Promise<ReviewWriteResult> {
+  try {
+    const json = await res.json();
+    const detail = json.detail;
+    if (detail && typeof detail === "object") {
+      return {
+        success: false,
+        error: detail.message || "Could not save these details.",
+        fields: Array.isArray(detail.fields) ? detail.fields : [],
+        opportunity: detail.opportunity,
+      };
+    }
+    return { success: false, error: typeof detail === "string" ? detail : "Could not save these details." };
+  } catch {
+    return { success: false, error: "Could not save these details." };
+  }
+}
+
+export async function saveVerificationItem(queueId: string, corrections: ReviewCorrection): Promise<ReviewWriteResult> {
+  try {
+    const res = await fetch(`${getBase()}/admin/review/${queueId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(corrections),
+    });
+    if (!res.ok) return readReviewError(res);
+    const json = await res.json();
+    return { success: true, opportunity: json.data?.opportunity };
+  } catch {
+    return { success: false, error: "Could not reach the review API." };
+  }
+}
+
+export async function uploadVerificationFlyer(queueId: string, file: File): Promise<ReviewWriteResult> {
+  try {
+    const body = new FormData();
+    body.append("flyer_file", file);
+    const res = await fetch(`${getBase()}/admin/review/${queueId}/flyer`, {
+      method: "POST",
+      body,
+    });
+    if (!res.ok) return readReviewError(res);
+    const json = await res.json();
+    return { success: true, flyer_url: json.data?.flyer_url };
+  } catch {
+    return { success: false, error: "Could not upload the image." };
+  }
+}
+
+export async function approveVerificationItem(queueId: string, corrections?: ReviewCorrection): Promise<ReviewWriteResult> {
   try {
     const res = await fetch(`${getBase()}/admin/review/${queueId}/approve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(corrections || {}),
     });
-    if (res.ok) {
-      return { success: true };
-    }
-    return { success: false };
+    if (!res.ok) return readReviewError(res);
+    const json = await res.json();
+    return { success: true, opportunity: json.data?.opportunity };
   } catch {
-    return { success: false };
+    return { success: false, error: "Could not reach the review API." };
   }
 }
 

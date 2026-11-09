@@ -210,7 +210,7 @@ class LocalAIProvider(AIProvider):
                     "temperature": 0.1,
                     "response_format": {"type": "json_object"},
                 }
-                async with httpx.AsyncClient(timeout=15.0) as client:
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
                     res = await client.post(f"{self.base_url}/chat/completions", headers=headers, json=payload)
                     if res.status_code == 200:
                         content = res.json().get("choices", [{}])[0].get("message", {}).get("content", "")
@@ -232,7 +232,7 @@ class LocalAIProvider(AIProvider):
                     ],
                     "temperature": 0.2,
                 }
-                async with httpx.AsyncClient(timeout=15.0) as client:
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
                     res = await client.post(f"{self.base_url}/chat/completions", headers=headers, json=payload)
                     if res.status_code == 200:
                         content = res.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
