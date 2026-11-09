@@ -6,6 +6,8 @@ import { Footer } from "@/components/Footer";
 import { BackendWarmup } from "@/components/BackendWarmup";
 import { TopProgress } from "@/components/TopProgress";
 import { SmoothScroll } from "@/components/SmoothScroll";
+import { CommandPalette } from "@/components/CommandPalette";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "sonner";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -48,14 +50,17 @@ export default function RootLayout({
       <body
         className={`${plusJakarta.variable} ${instrumentSerif.variable} font-sans min-h-screen flex flex-col bg-np-bg text-np-text antialiased`}
       >
-        <SmoothScroll>
-          <TopProgress />
-          <BackendWarmup />
-          <Navbar />
-          <main className="flex-1 flex flex-col animate-np-fade">{children}</main>
-          <Footer />
-          <Toaster theme="dark" position="bottom-right" />
-        </SmoothScroll>
+        <NuqsAdapter>
+          <SmoothScroll>
+            <TopProgress />
+            <BackendWarmup />
+            <Navbar />
+            <main className="flex-1 flex flex-col animate-np-fade">{children}</main>
+            <Footer />
+            <CommandPalette />
+            <Toaster theme="dark" position="bottom-right" />
+          </SmoothScroll>
+        </NuqsAdapter>
       </body>
     </html>
   );

@@ -1,9 +1,9 @@
-import React from "react";
+import React, { Suspense } from "react";
 import Link from "next/link";
-import { Search, Filter, X } from "lucide-react";
+import { Filter } from "lucide-react";
 import { OpportunityGrid } from "@/components/OpportunityGrid";
 import { Pagination } from "@/components/Pagination";
-import { SlidingChips } from "@/components/SlidingChips";
+import { ExploreFilters } from "@/components/ExploreFilters";
 import { fetchOpportunities, fetchCategories, searchOpportunities } from "@/lib/api";
 import { paginate, prepareListings } from "@/lib/opportunityDisplay";
 
@@ -23,16 +23,6 @@ interface OpportunitiesPageProps {
 export const revalidate = 30;
 
 const PAGE_SIZE = 12;
-
-const CITIES = [
-  "Islamabad",
-  "Lahore",
-  "Karachi",
-  "Peshawar",
-  "Quetta",
-  "Multan",
-  "Faisalabad",
-];
 
 function buildQuery(params: Record<string, string | undefined>) {
   const qs = new URLSearchParams();
@@ -98,7 +88,6 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
   const items = paged.items;
   const meta = paged.meta;
 
-  const activeFiltersCount = [category, city, online, urgency].filter(Boolean).length;
   const base = {
     q: q || undefined,
     category: category || undefined,
@@ -124,133 +113,9 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
         </p>
       </div>
 
-      <div className="np-panel p-4 sm:p-5 mb-8 space-y-4">
-        <form method="GET" action="/opportunities" className="relative flex items-center">
-          <Search className="absolute left-4 w-4 h-4 text-np-faint" />
-          <input
-            type="text"
-            name="q"
-            defaultValue={q}
-            placeholder="Search by keyword, organizer, city, or field…"
-            className="np-input pl-11 pr-24"
-          />
-          {category && <input type="hidden" name="category" value={category} />}
-          {city && <input type="hidden" name="city" value={city} />}
-          {online && <input type="hidden" name="online" value={online} />}
-          {urgency && <input type="hidden" name="urgency" value={urgency} />}
-          {sort && sort !== "newest" && <input type="hidden" name="sort" value={sort} />}
-          {showPast && <input type="hidden" name="past" value="1" />}
-          <button type="submit" className="absolute right-2 np-btn-primary py-1.5 px-4 text-xs">
-            Search
-          </button>
-        </form>
-
-        <div className="border-t border-white/[0.07] pt-3">
-          <SlidingChips
-            group="categories"
-            chips={[
-              {
-                id: "all",
-                label: "All categories",
-                href: `/opportunities${buildQuery({
-                  q: q || undefined,
-                  city: city || undefined,
-                  online: online || undefined,
-                  urgency: urgency || undefined,
-                  sort: base.sort,
-                  past: base.past,
-                })}`,
-                active: !category,
-              },
-              ...categories.map((cat) => ({
-                id: cat.id,
-                label: cat.name,
-                href: `/opportunities${buildQuery({ ...base, category: cat.slug, page: undefined })}`,
-                active: category === cat.slug,
-              })),
-            ]}
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-np-faint">Location:</span>
-            {CITIES.map((cityName) => (
-              <Link
-                key={cityName}
-                href={`/opportunities${buildQuery({
-                  ...base,
-                  city: cityName,
-                  online: undefined,
-                  page: undefined,
-                })}`}
-                className={`px-2.5 py-1 rounded-md border ${
-                  city.toLowerCase() === cityName.toLowerCase()
-                    ? "bg-np-verify/15 text-np-verify border-np-verify/40"
-                    : "bg-np-surface-2 text-np-muted border-np-border hover:text-np-text"
-                }`}
-              >
-                {cityName}
-              </Link>
-            ))}
-
-            <span className="text-np-border-strong mx-1">|</span>
-
-            <Link
-              href={`/opportunities${buildQuery({
-                ...base,
-                city: undefined,
-                online: "true",
-                page: undefined,
-              })}`}
-              className={`px-2.5 py-1 rounded-md border ${
-                online === "true"
-                  ? "bg-np-online/15 text-np-online border-np-online/40"
-                  : "bg-np-surface-2 text-np-muted border-np-border hover:text-np-text"
-              }`}
-            >
-              Online only
-            </Link>
-
-            <Link
-              href={`/opportunities${buildQuery({
-                ...base,
-                urgency: "urgent",
-                page: undefined,
-              })}`}
-              className={`px-2.5 py-1 rounded-md border ${
-                urgency === "urgent"
-                  ? "bg-np-danger/15 text-np-danger border-np-danger/40"
-                  : "bg-np-surface-2 text-np-muted border-np-border hover:text-np-text"
-              }`}
-            >
-              Closing soon
-            </Link>
-
-            <Link
-              href={`/opportunities${buildQuery({ ...base, past: showPast ? undefined : "1", page: undefined })}`}
-              className={`px-2.5 py-1 rounded-md border ${
-                showPast
-                  ? "bg-white/10 text-np-text border-white/15"
-                  : "bg-np-surface-2 text-np-muted border-np-border hover:text-np-text"
-              }`}
-              aria-pressed={showPast}
-            >
-              Show past
-            </Link>
-          </div>
-
-          {activeFiltersCount > 0 && (
-            <Link
-              href="/opportunities"
-              className="flex items-center gap-1 text-np-muted hover:text-np-danger transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span>Clear filters ({activeFiltersCount})</span>
-            </Link>
-          )}
-        </div>
-      </div>
+      <Suspense fallback={<div className="np-panel mb-8 h-36" aria-hidden="true" />}>
+        <ExploreFilters categories={categories} />
+      </Suspense>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div className="text-sm text-np-muted">
@@ -272,34 +137,6 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
               · Page {meta.page} of {meta.total_pages}
             </span>
           )}
-        </div>
-
-        <div className="flex items-center gap-1 text-sm flex-wrap">
-          <span className="text-np-faint mr-1">Sort:</span>
-          {[
-            { id: "deadline", label: "Deadline" },
-            { id: "newest", label: "Newest" },
-            { id: "trust", label: "Trust" },
-          ].map((opt) => (
-            <Link
-              key={opt.id}
-              href={`/opportunities${buildQuery({
-                q: q || undefined,
-                category: category || undefined,
-                city: city || undefined,
-                online: online || undefined,
-                urgency: urgency || undefined,
-                sort: opt.id,
-              })}`}
-              className={`px-2.5 py-1 rounded-md border ${
-                sort === opt.id
-                  ? "border-np-accent/40 bg-np-accent/15 text-np-accent font-semibold"
-                  : "border-transparent text-np-muted hover:text-np-text"
-              }`}
-            >
-              {opt.label}
-            </Link>
-          ))}
         </div>
       </div>
 
