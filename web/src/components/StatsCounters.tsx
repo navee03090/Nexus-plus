@@ -88,12 +88,12 @@ export function StatsCounters({ items }: { items: StatItem[] }) {
   }, []);
 
   return (
-    <div ref={ref} className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
+    <div ref={ref} className="grid grid-cols-2 gap-4 text-center sm:gap-6 md:grid-cols-4">
       {items.map((item) => (
         <div key={item.label} className="p-3 np-fade-up">
           <div
             className={`text-2xl sm:text-3xl font-bold tabular-nums ${
-              item.colorClass || "text-np-text"
+              item.colorClass || "text-np-accent"
             }`}
           >
             <CountUp

@@ -63,8 +63,8 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
 
   return (
     <article
-      className={`group relative flex h-full flex-col overflow-hidden rounded-np-lg border border-white/10 bg-np-surface ${
-        expired ? "opacity-60" : ""
+      className={`group relative flex h-full flex-col overflow-hidden rounded-np-lg border border-white/[0.07] bg-np-surface transition-[transform,border-color,opacity] duration-200 hover:-translate-y-0.5 hover:border-np-accent/45 ${
+        expired ? "opacity-60 hover:opacity-80" : ""
       }`}
       style={{ viewTransitionName: `card-${opportunity.slug}` }}
     >
