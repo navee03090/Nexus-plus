@@ -82,14 +82,14 @@ export function TopProgress() {
 
   return (
     <div className="fixed top-0 inset-x-0 z-[80] pointer-events-none">
-      <div className="h-1 bg-slate-900/70">
+      <div className="h-0.5 bg-np-surface">
         <div
-          className="h-full bg-gradient-to-r from-indigo-500 via-cyan-400 to-emerald-400 shadow-[0_0_14px_rgba(99,102,241,0.85)] transition-[width] duration-200 ease-out"
+          className="h-full bg-np-accent transition-[width] duration-200 ease-out"
           style={{ width: `${Math.min(progress, 100)}%` }}
         />
       </div>
-      <div className="absolute right-3 top-2 inline-flex items-center gap-1.5 rounded-full border border-indigo-400/40 bg-slate-950/90 px-2.5 py-1 text-[10px] font-semibold text-indigo-100">
-        <span className="h-1.5 w-1.5 rounded-full bg-indigo-300 animate-pulse" />
+      <div className="absolute right-3 top-2 inline-flex items-center gap-1.5 rounded-full border border-np-border bg-np-bg/95 px-2.5 py-1 text-[10px] font-semibold text-np-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-np-accent" />
         {label}…
       </div>
     </div>

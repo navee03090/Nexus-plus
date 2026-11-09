@@ -2,10 +2,23 @@ import { Opportunity, Category, Organization, Source, VerificationItem } from "@
 import { FALLBACK_OPPORTUNITIES } from "./fallback_data";
 import {
   fetchPublishedFromSupabase,
+  fetchPublishedPageFromSupabase,
   fetchOpportunityFromSupabase,
   fetchCategoriesFromSupabase,
   fetchStatsFromSupabase,
 } from "./supabase_data";
+
+export type OpportunitiesPageMeta = {
+  page: number;
+  page_size: number;
+  total_items: number;
+  total_pages: number;
+};
+
+export type OpportunitiesPageResult = {
+  items: Opportunity[];
+  meta: OpportunitiesPageMeta;
+};
 
 export const API_BASE = "https://nexus-pulse-api-ult5.onrender.com/api/v1";
 
@@ -47,10 +60,27 @@ export async function fetchOpportunities(params?: {
   sort_by?: string;
   urgency?: string;
   limit?: number;
+  page?: number;
 }): Promise<Opportunity[]> {
+  const page = await fetchOpportunitiesPage(params);
+  return page.items;
+}
+
+export async function fetchOpportunitiesPage(params?: {
+  category?: string;
+  city?: string;
+  is_online?: boolean;
+  sort_by?: string;
+  urgency?: string;
+  limit?: number;
+  page?: number;
+}): Promise<OpportunitiesPageResult> {
+  const page = Math.max(1, params?.page || 1);
+  const pageSize = Math.min(Math.max(1, params?.limit || 12), 50);
+
   try {
-    const live = await fetchPublishedFromSupabase(params);
-    if (live.length > 0) return live;
+    const live = await fetchPublishedPageFromSupabase(params);
+    if (live.items.length > 0 || live.meta.total_items > 0) return live;
   } catch {
     // Render is the next fallback
   }
@@ -62,20 +92,42 @@ export async function fetchOpportunities(params?: {
     if (params?.is_online !== undefined) url.searchParams.set("is_online", String(params.is_online));
     if (params?.sort_by) url.searchParams.set("sort_by", params.sort_by);
     if (params?.urgency) url.searchParams.set("urgency", params.urgency);
-    if (params?.limit) {
-      url.searchParams.set("limit", String(params.limit));
-      url.searchParams.set("page_size", String(params.limit));
-    }
+    url.searchParams.set("page", String(page));
+    url.searchParams.set("page_size", String(pageSize));
+    url.searchParams.set("limit", String(pageSize));
 
     const res = await fetchWithTimeout(url.toString(), { cache: "no-store" });
     if (res.ok) {
       const json = await res.json();
-      if (json.data && json.data.length > 0) return json.data;
+      const items: Opportunity[] = json.data || [];
+      const meta = json.meta || {};
+      if (items.length > 0 || meta.total_items > 0) {
+        return {
+          items,
+          meta: {
+            page: meta.page || page,
+            page_size: meta.page_size || pageSize,
+            total_items: meta.total_items ?? items.length,
+            total_pages: meta.total_pages || Math.max(1, Math.ceil((meta.total_items ?? items.length) / pageSize)),
+          },
+        };
+      }
     }
   } catch {
     // Graceful fallback to static verified records
   }
-  return FALLBACK_OPPORTUNITIES;
+
+  const start = (page - 1) * pageSize;
+  const slice = FALLBACK_OPPORTUNITIES.slice(start, start + pageSize);
+  return {
+    items: slice,
+    meta: {
+      page,
+      page_size: pageSize,
+      total_items: FALLBACK_OPPORTUNITIES.length,
+      total_pages: Math.max(1, Math.ceil(FALLBACK_OPPORTUNITIES.length / pageSize)),
+    },
+  };
 }
 
 export async function fetchOpportunityBySlug(slug: string): Promise<Opportunity | null> {

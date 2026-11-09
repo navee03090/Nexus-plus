@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, ShieldAlert, Sparkles, Layers } from "lucide-react";
+import { ShieldCheck, ShieldAlert, Sparkles } from "lucide-react";
 
 interface VerificationBadgeProps {
   status: string;
@@ -18,31 +18,28 @@ export const VerificationBadge: React.FC<VerificationBadgeProps> = ({
 }) => {
   const normalized = status.toLowerCase();
 
-  if (normalized === "source_verified" || normalized === "verified" || (trustScore && trustScore >= 0.85)) {
+  if (
+    normalized === "source_verified" ||
+    normalized === "verified" ||
+    (trustScore && trustScore >= 0.85)
+  ) {
     return (
       <span
         title={
           sourcesCount > 1
-            ? `Verified across ${sourcesCount} official sources with high cryptographic/provenance trust`
-            : "Directly verified against original authoritative source"
+            ? `Verified across ${sourcesCount} official sources`
+            : "Verified against the original official source"
         }
-        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 ${className}`}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-np-verify/10 text-np-verify border border-np-verify/30 ${className}`}
       >
-        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+        <ShieldCheck className="w-3 h-3" />
         {sourcesCount > 1 ? (
-          <span className="flex items-center gap-1">
-            <span>Cross-Confirmed</span>
-            <span className="px-1 py-0.2 text-[10px] bg-emerald-500/20 rounded font-mono">
-              {sourcesCount} sources
-            </span>
-          </span>
+          <span>Verified · {sourcesCount}</span>
         ) : (
-          <span>Source Verified</span>
+          <span>Verified</span>
         )}
         {showScore && trustScore !== undefined && (
-          <span className="text-[11px] text-emerald-400/80 font-mono ml-0.5">
-            {Math.round(trustScore * 100)}%
-          </span>
+          <span className="opacity-80">{Math.round(trustScore * 100)}%</span>
         )}
       </span>
     );
@@ -51,26 +48,24 @@ export const VerificationBadge: React.FC<VerificationBadgeProps> = ({
   if (normalized === "pending_verification" || normalized === "review_needed") {
     return (
       <span
-        title="Discovered by automated ingestion; awaiting editorial verification review"
-        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-950/60 text-amber-300 border border-amber-500/30 ${className}`}
+        title="Awaiting editorial verification"
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-np-warn/10 text-np-warn border border-np-warn/30 ${className}`}
       >
-        <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-        <span>In Verification</span>
+        <ShieldAlert className="w-3 h-3" />
+        <span>In review</span>
       </span>
     );
   }
 
   return (
     <span
-      title="Extracted with zero-hallucination multimodal AI pipelines"
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-950/60 text-indigo-300 border border-indigo-500/30 ${className}`}
+      title="Structured from source material"
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-np-accent/10 text-np-accent border border-np-accent/30 ${className}`}
     >
-      <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-      <span>AI Extracted</span>
+      <Sparkles className="w-3 h-3" />
+      <span>Listed</span>
       {showScore && trustScore !== undefined && (
-        <span className="text-[11px] text-indigo-400/80 font-mono ml-0.5">
-          {Math.round(trustScore * 100)}%
-        </span>
+        <span className="opacity-80">{Math.round(trustScore * 100)}%</span>
       )}
     </span>
   );

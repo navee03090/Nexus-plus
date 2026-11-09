@@ -34,36 +34,36 @@ export default function AlertsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1">
       <div className="mb-8">
-        <div className="flex items-center gap-2 text-xs text-indigo-400 font-semibold mb-2">
+        <div className="flex items-center gap-2 text-xs text-np-accent font-semibold mb-2">
           <Bell className="w-4 h-4" />
           <span>Real-Time Alert Dispatcher</span>
         </div>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">
+        <h1 className="text-3xl font-extrabold text-np-text tracking-tight">
           Notification Preferences & Channels
         </h1>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-sm text-np-muted mt-1">
           Receive proactive alerts across Telegram, Email, and Push before registration deadlines close.
         </p>
       </div>
 
       {savedStatus && (
-        <div className="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5 mb-6 animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="p-4 rounded-np-lg bg-np-verify/10 border border-np-verify/40 text-np-verify text-xs flex items-center gap-2.5 mb-6 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-np-verify shrink-0" />
           <span>Preferences updated successfully! Your alert channels are synchronized with the dispatch engine.</span>
         </div>
       )}
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Telegram Bot Integration Card */}
-        <div className="p-6 sm:p-7 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+        <div className="p-6 sm:p-7 rounded-np-lg bg-np-surface border border-np-border space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-np-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
                 <MessageSquare className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white">Telegram Instant Dispatch</h3>
-                <p className="text-xs text-slate-400">Receive rich markdown alerts directly on your phone or desktop</p>
+                <h3 className="text-base font-semibold text-np-text">Telegram Instant Dispatch</h3>
+                <p className="text-xs text-np-muted">Receive rich markdown alerts directly on your phone or desktop</p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -73,13 +73,13 @@ export default function AlertsPage() {
                 onChange={(e) => setTelegramEnabled(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+              <div className="w-11 h-6 bg-np-surface-2 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-np-online"></div>
             </label>
           </div>
 
           {telegramEnabled && (
             <div className="space-y-3 pt-2">
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-np-bg border border-np-border text-xs text-np-muted flex items-center justify-between">
                 <span>1. Start the bot on Telegram: <strong>@NexusPulseBot</strong></span>
                 <a
                   href="https://t.me"
@@ -92,14 +92,14 @@ export default function AlertsPage() {
                 </a>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-np-muted mb-1">
                   Telegram Username or Chat ID:
                 </label>
                 <input
                   type="text"
                   value={telegramChatId}
                   onChange={(e) => setTelegramChatId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  className="w-full bg-np-bg border border-np-border rounded-xl px-3 py-2 text-xs text-np-text focus:outline-none focus:border-np-accent font-mono"
                   placeholder="@your_telegram_username"
                 />
               </div>
@@ -108,15 +108,15 @@ export default function AlertsPage() {
         </div>
 
         {/* Email Digest Card */}
-        <div className="p-6 sm:p-7 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+        <div className="p-6 sm:p-7 rounded-np-lg bg-np-surface border border-np-border space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-np-lg bg-np-accent/10 border border-np-accent/20 text-np-accent flex items-center justify-center">
                 <Mail className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white">Email Opportunity Digest</h3>
-                <p className="text-xs text-slate-400">Curated weekly or urgent deadline notifications delivered to your inbox</p>
+                <h3 className="text-base font-semibold text-np-text">Email Opportunity Digest</h3>
+                <p className="text-xs text-np-muted">Curated weekly or urgent deadline notifications delivered to your inbox</p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -126,35 +126,35 @@ export default function AlertsPage() {
                 onChange={(e) => setEmailEnabled(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              <div className="w-11 h-6 bg-np-surface-2 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-np-accent"></div>
             </label>
           </div>
 
           {emailEnabled && (
             <div className="pt-2">
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-np-muted mb-1">
                 Notification Email Address:
               </label>
               <input
                 type="email"
                 value={emailAddress}
                 onChange={(e) => setEmailAddress(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-np-bg border border-np-border rounded-xl px-3 py-2 text-xs text-np-text focus:outline-none focus:border-np-accent"
               />
             </div>
           )}
         </div>
 
         {/* Browser Push Notifications */}
-        <div className="p-6 sm:p-7 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+        <div className="p-6 sm:p-7 rounded-np-lg bg-np-surface border border-np-border space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-np-lg bg-np-verify/10 border border-np-verify/20 text-np-verify flex items-center justify-center">
                 <Smartphone className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white">Browser Push Notifications</h3>
-                <p className="text-xs text-slate-400">Desktop alerts for closing opportunities</p>
+                <h3 className="text-base font-semibold text-np-text">Browser Push Notifications</h3>
+                <p className="text-xs text-np-muted">Desktop alerts for closing opportunities</p>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -164,19 +164,19 @@ export default function AlertsPage() {
                 onChange={(e) => setPushEnabled(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+              <div className="w-11 h-6 bg-np-surface-2 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-np-verify"></div>
             </label>
           </div>
         </div>
 
         {/* Intelligence Filters & Thresholds */}
-        <div className="p-6 sm:p-7 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-5">
-          <h3 className="text-base font-semibold text-white">Smart Dispatch Filters</h3>
+        <div className="p-6 sm:p-7 rounded-np-lg bg-np-surface border border-np-border space-y-5">
+          <h3 className="text-base font-semibold text-np-text">Smart Dispatch Filters</h3>
 
           <div>
             <div className="flex items-center justify-between text-xs mb-2">
-              <span className="text-slate-300 font-medium">Minimum Match Score:</span>
-              <span className="text-indigo-400 font-bold">{minMatchScore}%</span>
+              <span className="text-np-muted font-medium">Minimum Match Score:</span>
+              <span className="text-np-accent font-bold">{minMatchScore}%</span>
             </div>
             <input
               type="range"
@@ -185,22 +185,22 @@ export default function AlertsPage() {
               step="5"
               value={minMatchScore}
               onChange={(e) => setMinMatchScore(Number(e.target.value))}
-              className="w-full accent-indigo-600 cursor-pointer"
+              className="w-full accent-np-accent cursor-pointer"
             />
-            <p className="text-[11px] text-slate-500 mt-1">
+            <p className="text-[11px] text-np-faint mt-1">
               Only opportunities with a matching score equal to or above {minMatchScore}% will trigger high-priority alerts.
             </p>
           </div>
 
-          <div className="space-y-3 pt-3 border-t border-slate-800 text-xs">
+          <div className="space-y-3 pt-3 border-t border-np-border text-xs">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={deadlineReminders}
                 onChange={(e) => setDeadlineReminders(e.target.checked)}
-                className="rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0"
+                className="rounded bg-np-bg border-np-border text-indigo-600 focus:ring-0"
               />
-              <span className="text-slate-300">
+              <span className="text-np-muted">
                 Send 48-hour and 24-hour urgency countdown reminders for saved opportunities
               </span>
             </label>
@@ -210,9 +210,9 @@ export default function AlertsPage() {
                 type="checkbox"
                 checked={changesNotify}
                 onChange={(e) => setChangesNotify(e.target.checked)}
-                className="rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0"
+                className="rounded bg-np-bg border-np-border text-indigo-600 focus:ring-0"
               />
-              <span className="text-slate-300">
+              <span className="text-np-muted">
                 Immediately notify me if a deadline is extended or venue changed on an opportunity I follow
               </span>
             </label>
@@ -222,7 +222,7 @@ export default function AlertsPage() {
         <div className="flex justify-end pt-2">
           <button
             type="submit"
-            className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm transition-colors shadow-lg shadow-indigo-600/30"
+            className="px-6 py-3 rounded-xl bg-np-accent hover:bg-[#5a9dff] text-white font-semibold text-xs sm:text-sm transition-colors shadow-lg shadow-np"
           >
             Save Notification Preferences
           </button>

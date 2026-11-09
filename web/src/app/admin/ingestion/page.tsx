@@ -24,22 +24,22 @@ export default function IngestionRunsPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-cyan-400 mb-1">
+        <div className="flex items-center gap-2 text-xs font-semibold text-np-online mb-1">
           <Database className="w-4 h-4" />
           <span>Telemetry & Crawler Execution</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
           Ingestion Runs & Evidence Logs
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-np-muted mt-1">
           Real crawl history from the API. Empty until you click Crawl Now on a source.
         </p>
       </div>
 
-      <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
+      <div className="rounded-np-lg bg-np-surface border border-np-border overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/80 text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800">
+          <table className="w-full text-left text-xs text-np-muted">
+            <thead className="bg-np-bg/80 text-[11px] font-semibold uppercase tracking-wider text-np-muted border-b border-np-border">
               <tr>
                 <th className="px-6 py-4">Run ID & Source</th>
                 <th className="px-6 py-4">Discovered</th>
@@ -53,14 +53,14 @@ export default function IngestionRunsPage() {
             <tbody className="divide-y divide-slate-800/80">
               {loading && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-10 text-center text-np-faint">
                     Loading crawl runs…
                   </td>
                 </tr>
               )}
               {!loading && runs.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-10 text-center text-np-faint">
                     No ingestion runs yet.
                   </td>
                 </tr>
@@ -68,31 +68,31 @@ export default function IngestionRunsPage() {
               {runs.map((run) => {
                 const ok = run.status === "success" || run.status === "completed";
                 return (
-                  <tr key={run.id} className="hover:bg-slate-800/40 transition-colors">
+                  <tr key={run.id} className="hover:bg-np-surface-2/40 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-semibold text-white">{run.source}</div>
-                      <div className="text-[11px] text-slate-500 font-mono mt-0.5">{run.id}</div>
+                      <div className="text-[11px] text-np-faint font-mono mt-0.5">{run.id}</div>
                       {run.error_message && (
-                        <div className="text-[11px] text-amber-400 mt-1 max-w-xs truncate">{run.error_message}</div>
+                        <div className="text-[11px] text-np-warn mt-1 max-w-xs truncate">{run.error_message}</div>
                       )}
                     </td>
                     <td className="px-6 py-4 font-mono">{run.items_found ?? 0}</td>
-                    <td className="px-6 py-4 font-mono text-emerald-400 font-semibold">{run.items_processed ?? 0}</td>
-                    <td className="px-6 py-4 font-mono text-cyan-400">{run.items_duplicated ?? 0}</td>
+                    <td className="px-6 py-4 font-mono text-np-verify font-semibold">{run.items_processed ?? 0}</td>
+                    <td className="px-6 py-4 font-mono text-np-online">{run.items_duplicated ?? 0}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
                         ok
-                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                          : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                          ? "bg-emerald-500/20 text-np-verify border-np-verify/30"
+                          : "bg-amber-500/20 text-np-warn border-np-warn/30"
                       }`}>
                         {ok ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
                         <span>{run.status}</span>
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-mono text-slate-400">
+                    <td className="px-6 py-4 font-mono text-np-muted">
                       {run.duration_seconds != null ? `${run.duration_seconds}s` : "—"}
                     </td>
-                    <td className="px-6 py-4 text-slate-400 font-mono text-[11px]">
+                    <td className="px-6 py-4 text-np-muted font-mono text-[11px]">
                       <span className="inline-flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {formatWhen(run.started_at)}

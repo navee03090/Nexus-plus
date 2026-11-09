@@ -68,11 +68,11 @@ function formatDate(value?: string | null) {
 }
 
 function statusTone(status?: string) {
-  if (status === "published" || status === "updated") return "text-emerald-300 bg-emerald-500/15";
-  if (status === "pending_review") return "text-amber-200 bg-amber-500/15";
-  if (status === "rejected") return "text-rose-200 bg-rose-500/15";
-  if (status === "expired") return "text-slate-300 bg-slate-700/40";
-  return "text-slate-300 bg-slate-800";
+  if (status === "published" || status === "updated") return "text-np-verify bg-np-verify/15";
+  if (status === "pending_review") return "text-np-warn bg-np-warn/15";
+  if (status === "rejected") return "text-np-danger bg-rose-500/15";
+  if (status === "expired") return "text-np-muted bg-np-surface-2";
+  return "text-np-muted bg-np-surface-2";
 }
 
 const FILTERS: { id: StatusFilter; label: string }[] = [
@@ -289,20 +289,20 @@ export default function AdminOpportunitiesPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">Published opportunities</h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-np-muted mt-1">
             {liveCount} live on the portal. Edit here and the public listing updates immediately.
           </p>
         </div>
-        <div className="rounded-full px-3 py-1 text-[11px] font-semibold bg-indigo-500/15 text-indigo-200">
+        <div className="rounded-full px-3 py-1 text-[11px] font-semibold bg-np-accent/15 text-indigo-200">
           {total} in this view
         </div>
       </div>
 
       {notice && (
-        <div className={`rounded-2xl border px-4 py-3 text-xs ${
+        <div className={`rounded-np-lg border px-4 py-3 text-xs ${
           noticeTone === "error"
-            ? "border-rose-500/40 bg-rose-950/50 text-rose-200"
-            : "border-emerald-500/40 bg-emerald-950/50 text-emerald-200"
+            ? "border-np-danger/40 bg-np-danger/10 text-np-danger"
+            : "border-np-verify/40 bg-emerald-950/50 text-np-verify"
         }`}>
           {notice}
         </div>
@@ -317,8 +317,8 @@ export default function AdminOpportunitiesPage() {
               onClick={() => setStatus(filter.id)}
               className={`rounded-full px-3 py-1.5 text-[11px] font-semibold ${
                 status === filter.id
-                  ? "bg-indigo-600 text-white"
-                  : "bg-slate-900 text-slate-400 border border-slate-800"
+                  ? "bg-np-accent text-white"
+                  : "bg-np-surface text-np-muted border border-np-border"
               }`}
             >
               {filter.label}
@@ -327,7 +327,7 @@ export default function AdminOpportunitiesPage() {
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-np-faint absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
@@ -335,13 +335,13 @@ export default function AdminOpportunitiesPage() {
                 if (event.key === "Enter") setQuery(searchInput.trim());
               }}
               placeholder="Search title, city, link…"
-              className="w-full sm:w-64 rounded-xl border border-slate-800 bg-slate-950 pl-9 pr-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400"
+              className="w-full sm:w-64 rounded-xl border border-np-border bg-np-bg pl-9 pr-3 py-2 text-xs text-np-text outline-none focus:border-np-accent"
             />
           </div>
           <select
             value={category}
             onChange={(event) => setCategory(event.target.value)}
-            className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400"
+            className="rounded-xl border border-np-border bg-np-bg px-3 py-2 text-xs text-np-text outline-none focus:border-np-accent"
           >
             <option value="">All categories</option>
             {categories.map((cat) => (
@@ -351,7 +351,7 @@ export default function AdminOpportunitiesPage() {
           <button
             type="button"
             onClick={() => setQuery(searchInput.trim())}
-            className="rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-100"
+            className="rounded-xl bg-np-surface-2 px-3 py-2 text-xs font-semibold text-np-text"
           >
             Search
           </button>
@@ -360,22 +360,22 @@ export default function AdminOpportunitiesPage() {
 
       {isLoading && items.length === 0 ? (
         <div className="py-16 text-center space-y-3">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mx-auto" />
-          <p className="text-xs text-slate-400">Loading opportunities…</p>
+          <Loader2 className="w-8 h-8 animate-spin text-np-accent mx-auto" />
+          <p className="text-xs text-np-muted">Loading opportunities…</p>
         </div>
       ) : !selected ? (
         <div className="py-16 text-center space-y-3">
-          <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto ${
-            loadError ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+          <div className={`w-16 h-16 rounded-np-lg border flex items-center justify-center mx-auto ${
+            loadError ? "bg-np-warn/10 text-np-warn border-np-warn/20" : "bg-np-verify/10 text-np-verify border-np-verify/20"
           }`}>
             {loadError ? <AlertTriangle className="w-8 h-8" /> : <CheckCircle2 className="w-8 h-8" />}
           </div>
           <h2 className="text-xl font-bold text-white">{loadError ? "Catalog did not load" : "No opportunities in this view"}</h2>
-          <p className="text-xs text-slate-400">{loadError || "Try another filter or publish from the verification queue."}</p>
+          <p className="text-xs text-np-muted">{loadError || "Try another filter or publish from the verification queue."}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 max-h-[820px] overflow-y-auto">
+          <div className="rounded-np-lg border border-np-border bg-np-surface max-h-[820px] overflow-y-auto">
             {items.map((item) => {
               const active = item.id === selectedId;
               return (
@@ -383,21 +383,21 @@ export default function AdminOpportunitiesPage() {
                   key={item.id}
                   type="button"
                   onClick={() => selectRow(item.id)}
-                  className={`w-full text-left px-3 py-3 border-b border-slate-800/80 ${
-                    active ? "bg-indigo-500/15" : "hover:bg-slate-800/50"
+                  className={`w-full text-left px-3 py-3 border-b border-np-border ${
+                    active ? "bg-np-accent/15" : "hover:bg-np-surface-2"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="text-xs font-semibold text-white line-clamp-2">{item.title || "Untitled"}</div>
-                    {item.featured && <Star className="w-3.5 h-3.5 text-amber-300 shrink-0" />}
+                    {item.featured && <Star className="w-3.5 h-3.5 text-np-warn shrink-0" />}
                   </div>
-                  <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400">
+                  <div className="mt-1 flex items-center justify-between text-[10px] text-np-muted">
                     <span>{item.category_name || "Uncategorized"}</span>
                     <span className={`rounded-full px-1.5 py-0.5 ${statusTone(item.status)}`}>
                       {item.status}
                     </span>
                   </div>
-                  <div className="mt-1 text-[10px] text-slate-500">
+                  <div className="mt-1 text-[10px] text-np-faint">
                     Deadline {formatDate(item.registration_deadline)}
                   </div>
                 </button>
@@ -406,35 +406,35 @@ export default function AdminOpportunitiesPage() {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="rounded-np-lg border border-np-border bg-np-surface px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-sm font-bold text-white">{draft.title || "Untitled"}</div>
-                <div className="mt-1 flex flex-wrap gap-2 text-[10px] text-slate-400">
+                <div className="mt-1 flex flex-wrap gap-2 text-[10px] text-np-muted">
                   <span className={`rounded-full px-2 py-0.5 ${statusTone(selected.status)}`}>{selected.status}</span>
                   <span>{selected.organization_name || "No organization"}</span>
                   <span>{selected.city || "No city"}</span>
-                  {dirty && <span className="text-amber-300">Unsaved</span>}
-                  {!ready && <span className="text-amber-300">Needs title + deadline or apply link</span>}
+                  {dirty && <span className="text-np-warn">Unsaved</span>}
+                  {!ready && <span className="text-np-warn">Needs title + deadline or apply link</span>}
                 </div>
               </div>
               {selected.slug && (
                 <Link
                   href={`/opportunities/${selected.slug}`}
                   target="_blank"
-                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-300"
+                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-np-accent"
                 >
                   Open on site <ExternalLink className="w-3.5 h-3.5" />
                 </Link>
               )}
             </div>
 
-            <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+            <section className="rounded-np-lg border border-np-border bg-np-surface p-4">
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-300 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-400" />
+                <h2 className="text-xs font-bold uppercase tracking-wide text-np-muted flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-np-accent" />
                   Edit opportunity
                 </h2>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-np-muted">
                   Updated {formatDate(selected.updated_at)}
                 </span>
               </div>
@@ -448,12 +448,12 @@ export default function AdminOpportunitiesPage() {
               />
             </section>
 
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 flex flex-wrap gap-2 justify-end">
+            <div className="rounded-np-lg border border-np-border bg-np-surface px-4 py-3 flex flex-wrap gap-2 justify-end">
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={Boolean(busyAction) || !dirty}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-xs font-semibold text-slate-100 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-np-border-strong bg-np-bg px-4 py-2 text-xs font-semibold text-np-text disabled:opacity-60"
               >
                 {busyAction === "save" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 Save details
@@ -462,7 +462,7 @@ export default function AdminOpportunitiesPage() {
                 type="button"
                 onClick={() => runStatusAction("feature")}
                 disabled={Boolean(busyAction)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-950/40 px-4 py-2 text-xs font-semibold text-amber-100 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-np-warn/30 bg-amber-950/40 px-4 py-2 text-xs font-semibold text-amber-100 disabled:opacity-60"
               >
                 {busyAction === "feature" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Star className="w-3.5 h-3.5" />}
                 {draft.featured ? "Unfeature" : "Feature"}
@@ -472,7 +472,7 @@ export default function AdminOpportunitiesPage() {
                   type="button"
                   onClick={() => runStatusAction("publish")}
                   disabled={Boolean(busyAction)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-np-verify px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
                 >
                   {busyAction === "publish" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
                   Publish
@@ -483,7 +483,7 @@ export default function AdminOpportunitiesPage() {
                   type="button"
                   onClick={() => runStatusAction("unpublish")}
                   disabled={Boolean(busyAction)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-600 bg-slate-950 px-4 py-2 text-xs font-semibold text-slate-200 disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-600 bg-np-bg px-4 py-2 text-xs font-semibold text-np-text disabled:opacity-60"
                 >
                   {busyAction === "unpublish" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <EyeOff className="w-3.5 h-3.5" />}
                   Unpublish
@@ -493,7 +493,7 @@ export default function AdminOpportunitiesPage() {
                 type="button"
                 onClick={() => runStatusAction("expire")}
                 disabled={Boolean(busyAction) || selected.status === "expired"}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-600 bg-slate-950 px-4 py-2 text-xs font-semibold text-slate-200 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-600 bg-np-bg px-4 py-2 text-xs font-semibold text-np-text disabled:opacity-60"
               >
                 {busyAction === "expire" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Clock3 className="w-3.5 h-3.5" />}
                 Mark expired
@@ -502,7 +502,7 @@ export default function AdminOpportunitiesPage() {
                 type="button"
                 onClick={() => runStatusAction("reject")}
                 disabled={Boolean(busyAction) || selected.status === "rejected"}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/40 bg-rose-950/70 px-4 py-2 text-xs font-semibold text-rose-100 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-np-danger/40 bg-np-danger/15 px-4 py-2 text-xs font-semibold text-np-danger disabled:opacity-60"
               >
                 {busyAction === "reject" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                 Delete

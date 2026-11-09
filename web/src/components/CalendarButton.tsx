@@ -57,20 +57,20 @@ export const CalendarButton: React.FC<CalendarButtonProps> = ({ opportunity, cla
 
   return (
     <div className={`relative inline-block ${className}`}>
-      <div className="flex items-center rounded-lg bg-slate-800 border border-slate-700 overflow-hidden hover:border-slate-600 transition-colors">
+      <div className="flex items-center rounded-np bg-np-surface-2 border border-np-border overflow-hidden hover:border-np-border-strong transition-colors">
         <a
           href={googleUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-700/60 transition-colors"
+          className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-np-text hover:bg-np-surface transition-colors"
         >
-          <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+          <Calendar className="w-3.5 h-3.5 text-np-accent" />
           <span>Add to Calendar</span>
         </a>
         <button
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Calendar options"
-          className="p-2 text-slate-400 hover:text-white border-l border-slate-700 hover:bg-slate-700/60 transition-colors"
+          className="p-2 text-np-muted hover:text-np-text border-l border-np-border hover:bg-np-surface transition-colors"
         >
           <ChevronDown className="w-3.5 h-3.5" />
         </button>
@@ -79,22 +79,22 @@ export const CalendarButton: React.FC<CalendarButtonProps> = ({ opportunity, cla
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-1 w-48 rounded-lg bg-slate-900 border border-slate-800 shadow-xl z-50 py-1 text-xs">
+          <div className="absolute right-0 mt-1 w-48 rounded-np bg-np-surface border border-np-border shadow-np-lg z-50 py-1 text-xs">
             <a
               href={googleUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800"
+              className="flex items-center gap-2 px-3 py-2 text-np-muted hover:text-np-text hover:bg-np-surface-2"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+              <ExternalLink className="w-3.5 h-3.5 text-np-accent" />
               <span>Google Calendar</span>
             </a>
             <button
               onClick={downloadIcs}
-              className="w-full flex items-center gap-2 px-3 py-2 text-left text-slate-300 hover:text-white hover:bg-slate-800"
+              className="w-full flex items-center gap-2 px-3 py-2 text-left text-np-muted hover:text-np-text hover:bg-np-surface-2"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-400" />
+              <Download className="w-3.5 h-3.5 text-np-verify" />
               <span>Apple / Outlook (.ics)</span>
             </button>
           </div>

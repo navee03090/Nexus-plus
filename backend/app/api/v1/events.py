@@ -95,7 +95,7 @@ async def list_events(
     city: Optional[str] = Query(None, description="City name (e.g. Peshawar)"),
     is_online: Optional[bool] = Query(None, description="Filter virtual events"),
     status_filter: str = Query("published", description="Status filter"),
-    sort_by: str = Query("newest", description="newest, deadline, popular"),
+    sort_by: str = Query("newest", description="newest, deadline, popular, trust"),
     page: int = Query(1, ge=1),
     page_size: int = Query(15, ge=1, le=50),
     limit: Optional[int] = Query(None, ge=1, le=50, description="Alias for page_size"),
@@ -126,6 +126,8 @@ async def list_events(
         query = query.order_by(desc(Opportunity.published_at))
     elif sort_by == "popular":
         query = query.order_by(desc(Opportunity.view_count), desc(Opportunity.save_count))
+    elif sort_by == "trust":
+        query = query.order_by(desc(Opportunity.trust_score), desc(Opportunity.published_at))
     else:
         query = query.order_by(desc(Opportunity.featured), desc(Opportunity.published_at))
 

@@ -4,96 +4,101 @@
 
 @layer base {
   :root {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 4.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 4.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --np-bg: #070a0f;
+    --np-surface: #0e141b;
+    --np-surface-2: #151c25;
+    --np-border: #243041;
+    --np-border-strong: #3a4b61;
+    --np-text: #e8eef6;
+    --np-muted: #93a1b5;
+    --np-faint: #6b7a90;
+    --np-accent: #3d8bff;
+    --np-verify: #1f9b6a;
+    --np-warn: #d69a2d;
+    --np-danger: #d4535a;
+    --np-online: #2aa8c9;
   }
 
   body {
-    @apply bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white min-h-screen flex flex-col font-sans;
+    @apply bg-np-bg text-np-text antialiased selection:bg-np-accent/30 selection:text-white min-h-screen flex flex-col font-sans;
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-np-accent/60 ring-offset-2 ring-offset-np-bg;
   }
 }
 
-/* Custom glow and glassmorphism utilities */
+@layer components {
+  .np-panel {
+    @apply rounded-np-lg border border-np-border bg-np-surface;
+  }
+
+  .np-panel-hover {
+    @apply transition-[border-color,background-color] duration-200;
+  }
+
+  .np-panel-hover:hover {
+    @apply border-np-border-strong bg-np-surface-2;
+  }
+
+  .np-input {
+    @apply w-full rounded-np border border-np-border bg-np-surface-2 px-3 py-2.5 text-sm text-np-text placeholder:text-np-faint transition-colors focus:border-np-accent focus:outline-none focus:ring-1 focus:ring-np-accent;
+  }
+
+  .np-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-np bg-np-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#5a9dff] disabled:opacity-50;
+  }
+
+  .np-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-np border border-np-border bg-np-surface-2 px-4 py-2.5 text-sm font-semibold text-np-text transition-colors hover:border-np-border-strong hover:bg-np-surface disabled:opacity-50;
+  }
+
+  .np-chip {
+    @apply inline-flex items-center gap-1.5 rounded-np border border-np-border bg-np-surface-2 px-3 py-1.5 text-xs font-medium text-np-muted transition-colors hover:border-np-border-strong hover:text-np-text;
+  }
+
+  .np-chip-active {
+    @apply border-np-accent/40 bg-np-accent/15 text-np-accent hover:border-np-accent/50 hover:text-[#7aadff];
+  }
+}
+
+/* Legacy aliases — keep until remaining pages migrate */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  @apply rounded-np-lg border border-np-border bg-np-surface;
 }
 
 .glass-panel-hover {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  @apply transition-[border-color,background-color] duration-200;
 }
 
 .glass-panel-hover:hover {
-  background: rgba(30, 41, 59, 0.85);
-  border-color: rgba(99, 102, 241, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px -10px rgba(99, 102, 241, 0.15);
+  @apply border-np-border-strong bg-np-surface-2;
 }
 
-.pulse-indicator {
-  position: relative;
-}
-
-.pulse-indicator::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: inherit;
-  animation: pulse-ring 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
-}
-
-@keyframes pulse-ring {
-  0% {
-    transform: scale(0.95);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-}
-
-/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #070a0f;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #243041;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #3a4b61;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

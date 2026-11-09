@@ -50,16 +50,16 @@ const PLATFORMS: { name: PlatformType; color: string; bg: string; border: string
   },
   { 
     name: "Twitter", 
-    color: "text-slate-300", 
+    color: "text-np-muted", 
     bg: "bg-slate-700/20", 
     border: "border-slate-600/30",
     example: "https://x.com/nicpeshawar/status/1842..."
   },
   { 
     name: "Web", 
-    color: "text-emerald-400", 
-    bg: "bg-emerald-500/10", 
-    border: "border-emerald-500/30",
+    color: "text-np-verify", 
+    bg: "bg-np-verify/10", 
+    border: "border-np-verify/30",
     example: "https://www.uetpeshawar.edu.pk/student-notice-board"
   },
 ];
@@ -212,26 +212,26 @@ export default function AdminCuratorDropPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-np-border">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400 mb-1.5">
+          <div className="flex items-center gap-2 text-xs font-semibold text-np-accent mb-1.5">
             <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
             <span>Curator Station • Phase 1 Ingestion Pipeline</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             Social Media & Flyer Ingestion
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
-            Drop flyers, paste screenshots with <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[11px]">Ctrl+V</kbd>, or submit LinkedIn/Facebook post links. Nexus Pulse extracts structured data with QR decoding, OCR, and Gemini verification.
+          <p className="text-xs sm:text-sm text-np-muted mt-1 max-w-2xl">
+            Drop flyers, paste screenshots with <kbd className="px-1.5 py-0.5 rounded bg-np-surface-2 border border-np-border-strong text-np-muted font-mono text-[11px]">Ctrl+V</kbd>, or submit LinkedIn/Facebook post links. Nexus Pulse extracts structured data with QR decoding, OCR, and Gemini verification.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <Link
             href="/admin/review"
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-np-surface-2 hover:bg-np-surface-2 text-np-text text-xs font-medium border border-np-border-strong transition-colors"
           >
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <ShieldCheck className="w-4 h-4 text-np-verify" />
             <span>Verification Queue</span>
           </Link>
         </div>
@@ -242,11 +242,11 @@ export default function AdminCuratorDropPage() {
         
         {/* Left Form: 7 Columns */}
         <div className="lg:col-span-7 space-y-6">
-          <form onSubmit={handleSubmit} className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-6 shadow-xl">
+          <form onSubmit={handleSubmit} className="p-6 rounded-np-lg bg-np-surface border border-np-border space-y-6 shadow-xl">
             
             {/* 1. Platform Selector */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-np-muted mb-2">
                 1. Select Announcement Platform
               </label>
               <div className="grid grid-cols-5 gap-2">
@@ -260,7 +260,7 @@ export default function AdminCuratorDropPage() {
                       className={`flex flex-col items-center justify-center p-2.5 rounded-xl text-xs font-semibold transition-all border ${
                         isSelected
                           ? `${p.bg} ${p.border} ${p.color} ring-1 ring-indigo-500`
-                          : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                          : "bg-np-bg/60 border-np-border text-np-muted hover:text-np-text hover:border-np-border-strong"
                       }`}
                     >
                       <span>{p.name}</span>
@@ -273,10 +273,10 @@ export default function AdminCuratorDropPage() {
             {/* 2. Source URL */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <label className="text-xs font-semibold uppercase tracking-wider text-np-muted">
                   2. Canonical Post / Source URL <span className="text-red-400">*</span>
                 </label>
-                <span className="text-[10px] text-slate-500">Immutable Provenance Source</span>
+                <span className="text-[10px] text-np-faint">Immutable Provenance Source</span>
               </div>
               <div className="relative">
                 <input
@@ -285,10 +285,10 @@ export default function AdminCuratorDropPage() {
                   value={sourceUrl}
                   onChange={(e) => setSourceUrl(e.target.value)}
                   placeholder={activePlatformConfig.example}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-600 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl bg-np-bg border border-np-border text-np-text placeholder-slate-600 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>
-              <p className="text-[11px] text-slate-500 mt-1">
+              <p className="text-[11px] text-np-faint mt-1">
                 Zero-hallucination guarantee: All public users can verify this opportunity against this exact link.
               </p>
             </div>
@@ -296,11 +296,11 @@ export default function AdminCuratorDropPage() {
             {/* 3. Flyer Upload & Dropzone */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <label className="text-xs font-semibold uppercase tracking-wider text-np-muted">
                   3. Flyer / Poster Image
                 </label>
-                <span className="text-[10px] text-indigo-400">
-                  Tip: Press <kbd className="px-1 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[9px]">Ctrl+V</kbd> anywhere to paste screenshot
+                <span className="text-[10px] text-np-accent">
+                  Tip: Press <kbd className="px-1 py-0.5 rounded bg-np-surface-2 text-np-muted font-mono text-[9px]">Ctrl+V</kbd> anywhere to paste screenshot
                 </span>
               </div>
 
@@ -313,10 +313,10 @@ export default function AdminCuratorDropPage() {
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                  className={`border-2 border-dashed rounded-np-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
                     isDragging
                       ? "border-indigo-500 bg-indigo-500/10"
-                      : "border-slate-800 bg-slate-950/60 hover:border-slate-700 hover:bg-slate-950"
+                      : "border-np-border bg-np-bg/60 hover:border-np-border-strong hover:bg-np-bg"
                   }`}
                 >
                   <input
@@ -330,19 +330,19 @@ export default function AdminCuratorDropPage() {
                       }
                     }}
                   />
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-3">
+                  <div className="w-12 h-12 rounded-np-lg bg-np-accent/10 border border-np-accent/20 flex items-center justify-center text-np-accent mb-3">
                     <UploadCloud className="w-6 h-6" />
                   </div>
-                  <div className="text-xs font-semibold text-slate-200">
+                  <div className="text-xs font-semibold text-np-text">
                     Click to browse or drag & drop poster
                   </div>
-                  <div className="text-[11px] text-slate-500 mt-1">
+                  <div className="text-[11px] text-np-faint mt-1">
                     PNG, JPG, or WebP up to 15MB • Automatic QR & OCR extraction
                   </div>
                 </div>
               ) : (
-                <div className="relative rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 p-3 flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 flex-shrink-0 relative">
+                <div className="relative rounded-np-lg overflow-hidden border border-np-border-strong bg-np-bg p-3 flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-xl overflow-hidden bg-np-surface border border-np-border flex-shrink-0 relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={previewUrl}
@@ -351,14 +351,14 @@ export default function AdminCuratorDropPage() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold text-slate-200 truncate">
+                    <div className="text-xs font-semibold text-np-text truncate">
                       {file?.name || "Pasted Flyer Image"}
                     </div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">
+                    <div className="text-[11px] text-np-muted mt-0.5">
                       {file ? `${(file.size / 1024).toFixed(1)} KB` : "Clipboard Data"} • Ready for OCR & Vision
                     </div>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-np-verify bg-np-verify/10 px-2 py-0.5 rounded-full border border-np-verify/20">
                         <CheckCircle2 className="w-3 h-3" /> Image Loaded
                       </span>
                     </div>
@@ -366,7 +366,7 @@ export default function AdminCuratorDropPage() {
                   <button
                     type="button"
                     onClick={handleRemoveFile}
-                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+                    className="p-1.5 rounded-lg bg-np-surface-2 hover:bg-red-500/20 text-np-muted hover:text-red-400 transition-colors"
                     title="Remove Flyer"
                   >
                     <X className="w-4 h-4" />
@@ -376,13 +376,13 @@ export default function AdminCuratorDropPage() {
 
               {/* Alternative Flyer URL input */}
               <div className="mt-2 flex items-center gap-2">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider">or CDN URL:</span>
+                <span className="text-[10px] text-np-faint uppercase tracking-wider">or CDN URL:</span>
                 <input
                   type="url"
                   value={flyerUrl}
                   onChange={(e) => setFlyerUrl(e.target.value)}
                   placeholder="https://.../poster.jpg (optional direct image link)"
-                  className="flex-1 px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="flex-1 px-3 py-1.5 rounded-lg bg-np-bg border border-np-border text-[11px] text-np-text placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
             </div>
@@ -390,23 +390,23 @@ export default function AdminCuratorDropPage() {
             {/* 4. Raw Post Text / Caption */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <label className="text-xs font-semibold uppercase tracking-wider text-np-muted">
                   4. Post Caption / Announcement Text
                 </label>
-                <span className="text-[10px] text-slate-500">Optional Context</span>
+                <span className="text-[10px] text-np-faint">Optional Context</span>
               </div>
               <textarea
                 rows={4}
                 value={rawText}
                 onChange={(e) => setRawText(e.target.value)}
                 placeholder="Paste the caption, post body, speaker details, or registration instructions here..."
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-600 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 rounded-xl bg-np-bg border border-np-border text-np-text placeholder-slate-600 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               />
             </div>
 
             {/* 5. Optional Tags */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-np-muted mb-2">
                 5. Tags / Taxonomy Hints (Comma Separated)
               </label>
               <input
@@ -414,7 +414,7 @@ export default function AdminCuratorDropPage() {
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="e.g. Hackathon, AI, Peshawar, Undergraduate, KPITB"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-600 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-2.5 rounded-xl bg-np-bg border border-np-border text-np-text placeholder-slate-600 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               />
             </div>
 
@@ -435,7 +435,7 @@ export default function AdminCuratorDropPage() {
                 type="button"
                 onClick={resetForm}
                 disabled={isSubmitting}
-                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-np-muted hover:text-np-text transition-colors"
               >
                 Clear Form
               </button>
@@ -445,8 +445,8 @@ export default function AdminCuratorDropPage() {
                 disabled={isSubmitting}
                 className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs font-semibold text-white shadow-lg transition-all ${
                   isSubmitting
-                    ? "bg-indigo-600/50 cursor-not-allowed"
-                    : "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30 hover:scale-[1.01]"
+                    ? "bg-np-accent/50 cursor-not-allowed"
+                    : "bg-np-accent hover:bg-[#5a9dff] shadow-np hover:scale-[1.01]"
                 }`}
               >
                 {isSubmitting ? (
@@ -456,7 +456,7 @@ export default function AdminCuratorDropPage() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-indigo-300" />
+                    <Sparkles className="w-4 h-4 text-np-accent" />
                     <span>Run Multimodal Extraction</span>
                   </>
                 )}
@@ -466,11 +466,11 @@ export default function AdminCuratorDropPage() {
             {/* Real-time Progress Stepper */}
             {isSubmitting && progressStep && (
               <div className="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-800/40 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-medium text-indigo-300">
+                <div className="flex items-center gap-2 text-xs font-medium text-np-accent">
                   <div className="w-2 h-2 rounded-full bg-indigo-400 animate-ping" />
                   <span>{progressStep}</span>
                 </div>
-                <div className="w-full bg-slate-900 rounded-full h-1 overflow-hidden">
+                <div className="w-full bg-np-surface rounded-full h-1 overflow-hidden">
                   <div className="bg-indigo-500 h-1 rounded-full animate-pulse w-3/4" />
                 </div>
               </div>
@@ -483,22 +483,22 @@ export default function AdminCuratorDropPage() {
           
           {/* Result Card */}
           {result ? (
-            <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-5 shadow-2xl relative overflow-hidden animate-fadeIn">
+            <div className="p-6 rounded-np-lg bg-np-surface border border-np-border space-y-5 shadow-2xl relative overflow-hidden animate-fadeIn">
               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
 
               <div className="flex items-center justify-between">
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
                   result.is_new
-                    ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
-                    : "bg-amber-500/10 text-amber-300 border-amber-500/30"
+                    ? "bg-np-verify/10 text-np-verify border-np-verify/30"
+                    : "bg-np-warn/10 text-np-warn border-np-warn/30"
                 }`}>
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   {result.is_new ? "New Opportunity Published" : "Existing Opportunity Updated"}
                 </span>
 
                 <div className="text-right">
-                  <span className="text-[10px] text-slate-500 block">Trust Score</span>
-                  <span className="text-xs font-bold text-indigo-400 font-mono">
+                  <span className="text-[10px] text-np-faint block">Trust Score</span>
+                  <span className="text-xs font-bold text-np-accent font-mono">
                     {Math.round(result.opportunity.trust_score * 100)}%
                   </span>
                 </div>
@@ -506,14 +506,14 @@ export default function AdminCuratorDropPage() {
 
               {/* Flyer Thumbnail if available */}
               {result.opportunity.flyer_url && (
-                <div className="w-full h-40 rounded-xl overflow-hidden bg-slate-950 border border-slate-800 relative">
+                <div className="w-full h-40 rounded-xl overflow-hidden bg-np-bg border border-np-border relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={result.opportunity.flyer_url}
                     alt={result.opportunity.title}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-slate-950/80 backdrop-blur text-[10px] font-mono text-slate-300 border border-slate-800">
+                  <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-np-bg/80 backdrop-blur text-[10px] font-mono text-np-muted border border-np-border">
                     Flyer Stored & Fingerprinted
                   </div>
                 </div>
@@ -523,17 +523,17 @@ export default function AdminCuratorDropPage() {
                 <h3 className="text-base font-bold text-white leading-snug">
                   {result.opportunity.title}
                 </h3>
-                <p className="text-xs text-slate-400 mt-1 line-clamp-3 leading-relaxed">
+                <p className="text-xs text-np-muted mt-1 line-clamp-3 leading-relaxed">
                   {result.opportunity.summary}
                 </p>
               </div>
 
               {/* Key metadata grid */}
-              <div className="grid grid-cols-2 gap-3 text-xs bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+              <div className="grid grid-cols-2 gap-3 text-xs bg-np-bg p-3.5 rounded-xl border border-np-border">
                 <div>
-                  <span className="text-[10px] text-slate-500 block uppercase tracking-wider">Registration Deadline</span>
-                  <div className="font-semibold text-slate-200 flex items-center gap-1.5 mt-0.5">
-                    <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="text-[10px] text-np-faint block uppercase tracking-wider">Registration Deadline</span>
+                  <div className="font-semibold text-np-text flex items-center gap-1.5 mt-0.5">
+                    <Calendar className="w-3.5 h-3.5 text-np-accent" />
                     <span>
                       {result.opportunity.registration_deadline
                         ? new Date(result.opportunity.registration_deadline).toLocaleDateString(undefined, {
@@ -547,9 +547,9 @@ export default function AdminCuratorDropPage() {
                 </div>
 
                 <div>
-                  <span className="text-[10px] text-slate-500 block uppercase tracking-wider">Event Start Date</span>
-                  <div className="font-semibold text-slate-200 flex items-center gap-1.5 mt-0.5">
-                    <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-[10px] text-np-faint block uppercase tracking-wider">Event Start Date</span>
+                  <div className="font-semibold text-np-text flex items-center gap-1.5 mt-0.5">
+                    <Calendar className="w-3.5 h-3.5 text-np-verify" />
                     <span>
                       {result.opportunity.start_date
                         ? new Date(result.opportunity.start_date).toLocaleDateString(undefined, {
@@ -562,10 +562,10 @@ export default function AdminCuratorDropPage() {
                   </div>
                 </div>
 
-                <div className="col-span-2 pt-2 border-t border-slate-800">
-                  <span className="text-[10px] text-slate-500 block uppercase tracking-wider">Location / Venue</span>
-                  <div className="font-medium text-slate-300 flex items-center gap-1.5 mt-0.5 truncate">
-                    <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <div className="col-span-2 pt-2 border-t border-np-border">
+                  <span className="text-[10px] text-np-faint block uppercase tracking-wider">Location / Venue</span>
+                  <div className="font-medium text-np-muted flex items-center gap-1.5 mt-0.5 truncate">
+                    <MapPin className="w-3.5 h-3.5 text-np-warn shrink-0" />
                     <span className="truncate">{result.opportunity.venue || result.opportunity.city || "Online / Nationwide"}</span>
                   </div>
                 </div>
@@ -574,8 +574,8 @@ export default function AdminCuratorDropPage() {
               {/* Decoded QR Codes */}
               {result.qr_codes && result.qr_codes.length > 0 && (
                 <div className="p-3 rounded-xl bg-indigo-950/30 border border-indigo-800/40 text-xs space-y-1.5">
-                  <div className="flex items-center gap-1.5 font-semibold text-indigo-300">
-                    <QrCode className="w-4 h-4 text-indigo-400" />
+                  <div className="flex items-center gap-1.5 font-semibold text-np-accent">
+                    <QrCode className="w-4 h-4 text-np-accent" />
                     <span>Decoded Poster QR Code</span>
                   </div>
                   {result.qr_codes.map((qr, idx) => (
@@ -584,7 +584,7 @@ export default function AdminCuratorDropPage() {
                       href={qr}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] text-indigo-400 hover:text-indigo-300 hover:underline flex items-center gap-1 truncate"
+                      className="text-[11px] text-np-accent hover:text-np-accent hover:underline flex items-center gap-1 truncate"
                     >
                       <span className="truncate">{qr}</span>
                       <ExternalLink className="w-3 h-3 shrink-0" />
@@ -599,13 +599,13 @@ export default function AdminCuratorDropPage() {
                   <button
                     type="button"
                     onClick={() => setShowOcr(!showOcr)}
-                    className="text-slate-400 hover:text-slate-200 flex items-center gap-1 font-medium transition-colors text-[11px]"
+                    className="text-np-muted hover:text-np-text flex items-center gap-1 font-medium transition-colors text-[11px]"
                   >
                     <span>{showOcr ? "Hide" : "Show"} Raw OCR Evidence Preview</span>
                     <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showOcr ? "rotate-90" : ""}`} />
                   </button>
                   {showOcr && (
-                    <div className="mt-2 p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] font-mono text-slate-400 whitespace-pre-wrap max-h-36 overflow-y-auto">
+                    <div className="mt-2 p-3 rounded-xl bg-np-bg border border-np-border text-[11px] font-mono text-np-muted whitespace-pre-wrap max-h-36 overflow-y-auto">
                       {result.ocr_preview}
                     </div>
                   )}
@@ -617,7 +617,7 @@ export default function AdminCuratorDropPage() {
                 <Link
                   href={`/opportunities/${result.opportunity.slug}`}
                   target="_blank"
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-lg shadow-indigo-600/20"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-np-accent hover:bg-[#5a9dff] text-white text-xs font-semibold transition-colors shadow-lg shadow-indigo-600/20"
                 >
                   <span>View Public Page</span>
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -626,66 +626,66 @@ export default function AdminCuratorDropPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition-colors"
+                  className="px-4 py-2.5 rounded-xl bg-np-surface-2 hover:bg-np-surface-2 text-np-text text-xs font-medium transition-colors"
                 >
                   Ingest Another
                 </button>
               </div>
             </div>
           ) : (
-            <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-6">
+            <div className="p-6 rounded-np-lg bg-np-surface border border-np-border space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                <div className="w-10 h-10 rounded-xl bg-np-accent/10 border border-np-accent/20 flex items-center justify-center text-np-accent">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-white">Multimodal Curation Engine</h3>
-                  <p className="text-[11px] text-slate-400">Zero-hallucination verification active</p>
+                  <p className="text-[11px] text-np-muted">Zero-hallucination verification active</p>
                 </div>
               </div>
 
-              <div className="space-y-3 text-xs text-slate-400">
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                  <div className="font-semibold text-slate-200 flex items-center gap-1.5">
-                    <QrCode className="w-3.5 h-3.5 text-indigo-400" />
+              <div className="space-y-3 text-xs text-np-muted">
+                <div className="p-3 rounded-xl bg-np-bg border border-np-border space-y-1">
+                  <div className="font-semibold text-np-text flex items-center gap-1.5">
+                    <QrCode className="w-3.5 h-3.5 text-np-accent" />
                     <span>1. Computer Vision & QR Decoding</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                  <p className="text-[11px] text-np-muted leading-relaxed">
                     Embedded QR codes on flyers are instantly decoded into direct Google Forms or registration portals with OpenCV.
                   </p>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                  <div className="font-semibold text-slate-200 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                <div className="p-3 rounded-xl bg-np-bg border border-np-border space-y-1">
+                  <div className="font-semibold text-np-text flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-np-verify" />
                     <span>2. Otsu Binarization OCR</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                  <p className="text-[11px] text-np-muted leading-relaxed">
                     Text on noisy graphic posters is normalized and extracted as immutable evidence.
                   </p>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                  <div className="font-semibold text-slate-200 flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                <div className="p-3 rounded-xl bg-np-bg border border-np-border space-y-1">
+                  <div className="font-semibold text-np-text flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-np-warn" />
                     <span>3. Cross-Source Deduplication</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                  <p className="text-[11px] text-np-muted leading-relaxed">
                     If this event was already ingested from another source, dates and links are safely merged without creating duplicate cards.
                   </p>
                 </div>
               </div>
 
               {/* Chrome Extension Promo Card */}
-              <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-950/60 to-purple-950/40 border border-indigo-500/30 space-y-3">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-950/60 to-purple-950/40 border border-np-accent/30 space-y-3">
                 <div className="flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-indigo-400" />
+                  <Globe className="w-4 h-4 text-np-accent" />
                   <span className="text-xs font-bold text-white">Browser Extension Active</span>
                 </div>
                 <p className="text-[11px] text-indigo-200/90 leading-relaxed">
                   Browse LinkedIn, Facebook, or university portals with the <strong>Nexus Pulse Curator Extension</strong>. Ingest announcements with 1 click directly from your browser feed.
                 </p>
-                <div className="text-[10px] text-indigo-300 font-mono bg-indigo-900/40 px-2.5 py-1.5 rounded-lg border border-indigo-700/40">
+                <div className="text-[10px] text-np-accent font-mono bg-indigo-900/40 px-2.5 py-1.5 rounded-lg border border-indigo-700/40">
                   extension/ directory loaded • Manifest V3
                 </div>
               </div>

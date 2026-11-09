@@ -167,53 +167,123 @@ function mapOpportunity(row: SupabaseOpportunityRow): Opportunity {
   };
 }
 
-export async function fetchPublishedFromSupabase(params?: {
+export type PublishedListParams = {
   category?: string;
   city?: string;
   is_online?: boolean;
   sort_by?: string;
   urgency?: string;
   limit?: number;
+  page?: number;
   featuredFirst?: boolean;
-}): Promise<Opportunity[]> {
+};
+
+export type PublishedPageResult = {
+  items: Opportunity[];
+  meta: {
+    page: number;
+    page_size: number;
+    total_items: number;
+    total_pages: number;
+  };
+};
+
+function buildPublishedQuery(params?: PublishedListParams) {
+  const page = Math.max(1, params?.page || 1);
+  const pageSize = Math.min(Math.max(1, params?.limit || 12), 50);
+  const offset = (page - 1) * pageSize;
+
   const qs = new URLSearchParams();
   qs.set("select", OPP_SELECT);
   qs.set("status", "in.(published,updated)");
-  qs.set("limit", String(Math.min(params?.limit || 50, 50)));
+  qs.set("limit", String(pageSize));
+  qs.set("offset", String(offset));
 
-  if (params?.city) qs.set("city", `ilike.${params.city}`);
-  if (params?.is_online !== undefined) qs.set("is_online", `eq.${params.is_online}`);
-  if (params?.category) {
-    const cats = await restGet<{ id: string }[]>(
-      `categories?select=id&slug=eq.${encodeURIComponent(params.category.toLowerCase())}`
-    );
-    if (!cats?.[0]?.id) return [];
-    qs.set("category_id", `eq.${cats[0].id}`);
+  const countFilters: string[] = ["status=in.(published,updated)"];
+
+  if (params?.city) {
+    qs.set("city", `ilike.${params.city}`);
+    countFilters.push(`city=ilike.${params.city}`);
+  }
+  if (params?.is_online !== undefined) {
+    qs.set("is_online", `eq.${params.is_online}`);
+    countFilters.push(`is_online=eq.${params.is_online}`);
   }
 
   if (params?.sort_by === "deadline") {
     qs.set("order", "registration_deadline.asc.nullslast");
   } else if (params?.sort_by === "popular") {
     qs.set("order", "view_count.desc");
+  } else if (params?.sort_by === "trust") {
+    qs.set("order", "trust_score.desc,published_at.desc");
   } else if (params?.featuredFirst) {
     qs.set("order", "featured.desc,trust_score.desc,published_at.desc");
   } else {
     qs.set("order", "published_at.desc");
   }
 
+  return { qs, page, pageSize, countFilters };
+}
+
+export async function fetchPublishedFromSupabase(
+  params?: PublishedListParams
+): Promise<Opportunity[]> {
+  const page = await fetchPublishedPageFromSupabase(params);
+  return page.items;
+}
+
+export async function fetchPublishedPageFromSupabase(
+  params?: PublishedListParams
+): Promise<PublishedPageResult> {
+  const empty = {
+    items: [] as Opportunity[],
+    meta: {
+      page: Math.max(1, params?.page || 1),
+      page_size: Math.min(Math.max(1, params?.limit || 12), 50),
+      total_items: 0,
+      total_pages: 0,
+    },
+  };
+
+  const { qs, page, pageSize, countFilters } = buildPublishedQuery(params);
+
+  if (params?.category) {
+    const cats = await restGet<{ id: string }[]>(
+      `categories?select=id&slug=eq.${encodeURIComponent(params.category.toLowerCase())}`
+    );
+    if (!cats?.[0]?.id) return empty;
+    qs.set("category_id", `eq.${cats[0].id}`);
+    countFilters.push(`category_id=eq.${cats[0].id}`);
+  }
+
   let data = await restGet<SupabaseOpportunityRow[]>(`opportunities?${qs.toString()}`);
   if (!data) {
     data = await restGet<SupabaseOpportunityRow[]>(
-      `opportunities?select=*&status=in.(published,updated)&order=published_at.desc&limit=${Math.min(params?.limit || 50, 50)}`
+      `opportunities?select=*&status=in.(published,updated)&order=published_at.desc&limit=${pageSize}&offset=${(page - 1) * pageSize}`
     );
   }
-  if (!data || data.length === 0) return [];
+  if (!data || data.length === 0) return empty;
 
   let items = data.filter(isUpcomingOpportunity).map(mapOpportunity);
   if (params?.urgency === "urgent") {
-    items = items.filter((o) => o.deadline_urgency === "Urgent" || o.deadline_urgency === "Closing Soon");
+    items = items.filter(
+      (o) => o.deadline_urgency === "Urgent" || o.deadline_urgency === "Closing Soon"
+    );
   }
-  return items;
+
+  let totalItems = await restCount("opportunities", countFilters.join("&"));
+  if (!totalItems) totalItems = items.length + (page - 1) * pageSize;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
+  return {
+    items,
+    meta: {
+      page,
+      page_size: pageSize,
+      total_items: totalItems,
+      total_pages: totalPages,
+    },
+  };
 }
 
 export async function fetchOpportunityFromSupabase(idOrSlug: string): Promise<Opportunity | null> {

@@ -16,13 +16,15 @@ export const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({
 }) => {
   let displayLabel = label;
   if (!displayLabel && deadline) {
-    const diffDays = Math.ceil((new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil(
+      (new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    );
     if (diffDays < 0) {
       displayLabel = "Closed";
     } else if (diffDays === 0) {
-      displayLabel = "Closes Today";
+      displayLabel = "Closes today";
     } else if (diffDays === 1) {
-      displayLabel = "Closes Tomorrow";
+      displayLabel = "Closes tomorrow";
     } else {
       displayLabel = `Closes in ${diffDays} days`;
     }
@@ -35,10 +37,9 @@ export const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({
   if (normalized === "urgent" || (label && label.toLowerCase().includes("today"))) {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30 ${className}`}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-np-danger/10 text-np-danger border border-np-danger/30 ${className}`}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-        <AlertTriangle className="w-3.5 h-3.5" />
+        <AlertTriangle className="w-3 h-3" />
         {displayLabel}
       </span>
     );
@@ -47,9 +48,9 @@ export const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({
   if (normalized === "closing soon" || normalized === "high") {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30 ${className}`}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-np-warn/10 text-np-warn border border-np-warn/30 ${className}`}
       >
-        <Clock className="w-3.5 h-3.5" />
+        <Clock className="w-3 h-3" />
         {displayLabel}
       </span>
     );
@@ -58,9 +59,9 @@ export const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({
   if (normalized === "closed" || normalized === "expired") {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700 ${className}`}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-np-surface-2 text-np-faint border border-np-border ${className}`}
       >
-        <XCircle className="w-3.5 h-3.5" />
+        <XCircle className="w-3 h-3" />
         {displayLabel}
       </span>
     );
@@ -68,9 +69,9 @@ export const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 ${className}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-np-verify/10 text-np-verify border border-np-verify/30 ${className}`}
     >
-      <CheckCircle2 className="w-3.5 h-3.5" />
+      <CheckCircle2 className="w-3 h-3" />
       {displayLabel}
     </span>
   );

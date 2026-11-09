@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 import { ImageIcon, Loader2 } from "lucide-react";
 import { mediaUrl } from "@/lib/api";
+import { FlyerImage } from "@/components/FlyerImage";
 import { Category } from "@/types";
 
 export type OpportunityDraft = {
@@ -119,8 +120,8 @@ export function correctionsFromDraft(draft: OpportunityDraft) {
 }
 
 const inputClass = (flagged: boolean) =>
-  `w-full rounded-xl border px-3 py-2.5 text-xs text-slate-100 outline-none focus:border-indigo-400 ${
-    flagged ? "border-amber-500/50 bg-amber-500/10" : "border-slate-800 bg-slate-950"
+  `w-full rounded-np border px-3 py-2.5 text-xs text-np-text outline-none focus:border-np-accent focus:ring-1 focus:ring-np-accent ${
+    flagged ? "border-np-warn/50 bg-np-warn/10" : "border-np-border bg-np-bg"
   }`;
 
 function Label({
@@ -137,15 +138,15 @@ function Label({
   const over = limit != null && words != null && words > limit;
   return (
     <div className="mb-1 flex items-center justify-between gap-2">
-      <span className="text-[11px] font-semibold text-slate-400">{text}</span>
+      <span className="text-[11px] font-semibold text-np-muted">{text}</span>
       <div className="flex items-center gap-2">
         {limit != null && words != null && (
-          <span className={`text-[10px] font-mono ${over ? "text-amber-300 font-semibold" : "text-slate-500"}`}>
+          <span className={`text-[10px] font-mono ${over ? "text-np-warn font-semibold" : "text-np-faint"}`}>
             {words}/{limit} words
           </span>
         )}
-        {missing && <span className="text-[10px] font-semibold text-amber-300">Missing</span>}
-        {over && <span className="text-[10px] font-semibold text-amber-300">Too long</span>}
+        {missing && <span className="text-[10px] font-semibold text-np-warn">Missing</span>}
+        {over && <span className="text-[10px] font-semibold text-np-warn">Too long</span>}
       </div>
     </div>
   );
@@ -300,22 +301,22 @@ export function OpportunityEditor({
           />
         </div>
       </div>
-      <label className="flex items-center gap-2 text-[11px] text-slate-300">
+      <label className="flex items-center gap-2 text-[11px] text-np-muted">
         <input
           type="checkbox"
           checked={draft.is_online}
           onChange={(event) => onChange({ is_online: event.target.checked })}
-          className="accent-indigo-500"
+          className="accent-np-accent"
         />
         Online event
       </label>
       {showFeatured && (
-        <label className="flex items-center gap-2 text-[11px] text-slate-300">
+        <label className="flex items-center gap-2 text-[11px] text-np-muted">
           <input
             type="checkbox"
             checked={draft.featured}
             onChange={(event) => onChange({ featured: event.target.checked })}
-            className="accent-indigo-500"
+            className="accent-np-accent"
           />
           Featured on homepage
         </label>
@@ -360,21 +361,26 @@ export function OpportunityEditor({
       )}
       <div className="space-y-2 pt-1">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-slate-300 flex items-center gap-2">
-            <ImageIcon className="w-4 h-4 text-indigo-400" />
+          <h3 className="text-xs font-bold uppercase tracking-wide text-np-muted flex items-center gap-2">
+            <ImageIcon className="w-4 h-4 text-np-accent" />
             Event image
           </h3>
-          {flagged("flyer") && <span className="text-[10px] font-semibold text-amber-300">Check image</span>}
+          {flagged("flyer") && <span className="text-[10px] font-semibold text-np-warn">Check image</span>}
         </div>
         {preview ? (
-          <img src={preview} alt="" className="max-h-48 w-full rounded-xl border border-slate-800 object-contain bg-slate-950" />
+          <FlyerImage
+            src={draft.flyer_url}
+            alt="Event flyer preview"
+            contain
+            className="max-h-48 rounded-np border border-np-border overflow-hidden"
+          />
         ) : (
-          <div className="rounded-xl border border-dashed border-slate-700 bg-slate-950 px-3 py-8 text-center text-[11px] text-slate-500">
+          <div className="rounded-np border border-dashed border-np-border-strong bg-np-bg px-3 py-8 text-center text-[11px] text-np-faint">
             No image yet.
           </div>
         )}
         {onFlyerSelected && (
-          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-[11px] font-semibold text-slate-200">
+          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-np border border-np-border bg-np-bg px-3 py-2 text-[11px] font-semibold text-np-text">
             {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
             {busy ? "Uploading…" : preview ? "Replace image" : "Add image"}
             <input

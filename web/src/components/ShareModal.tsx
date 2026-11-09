@@ -15,8 +15,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({ opportunity, isOpen, onC
 
   if (!isOpen) return null;
 
-  const shareUrl = typeof window !== "undefined" ? window.location.href : `https://nexuspulse.org/opportunities/${opportunity.slug}`;
-  const shareText = `Check out "${opportunity.title}" on NEXUS PULSE — AI-verified opportunity intelligence:`;
+  const shareUrl =
+    typeof window !== "undefined"
+      ? window.location.href
+      : `https://nexuspulse.org/opportunities/${opportunity.slug}`;
+  const shareText = `Check out "${opportunity.title}" on NexusPulse — verified opportunities across Pakistan:`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -30,27 +33,27 @@ export const ShareModal: React.FC<ShareModalProps> = ({ opportunity, isOpen, onC
   const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-np-bg/80 backdrop-blur-sm">
+      <div className="bg-np-surface border border-np-border rounded-np-lg max-w-md w-full p-6 shadow-np-lg relative">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-np-muted hover:text-np-text transition-colors"
           aria-label="Close modal"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          <div className="p-2.5 rounded-np bg-np-accent/10 text-np-accent border border-np-accent/20">
             <Share2 className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-white">Share Opportunity</h3>
-            <p className="text-xs text-slate-400">Distribute to students, peers, or colleagues</p>
+            <h3 className="text-base font-semibold text-np-text">Share opportunity</h3>
+            <p className="text-xs text-np-muted">Send to students, peers, or colleagues</p>
           </div>
         </div>
 
-        <p className="text-xs text-slate-300 font-medium line-clamp-2 mb-4 bg-slate-950 p-3 rounded-lg border border-slate-800">
+        <p className="text-xs text-np-muted font-medium line-clamp-2 mb-4 bg-np-bg p-3 rounded-np border border-np-border">
           {opportunity.title}
         </p>
 
@@ -59,7 +62,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ opportunity, isOpen, onC
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-800/40 text-emerald-300 hover:bg-emerald-900/60 text-xs font-medium transition-colors"
+            className="flex items-center justify-center gap-2 p-2.5 rounded-np bg-np-verify/10 border border-np-verify/30 text-np-verify hover:bg-np-verify/20 text-xs font-medium transition-colors"
           >
             <span>WhatsApp</span>
           </a>
@@ -67,7 +70,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ opportunity, isOpen, onC
             href={telegramUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-sky-950/40 border border-sky-800/40 text-sky-300 hover:bg-sky-900/60 text-xs font-medium transition-colors"
+            className="flex items-center justify-center gap-2 p-2.5 rounded-np bg-np-online/10 border border-np-online/30 text-np-online hover:bg-np-online/20 text-xs font-medium transition-colors"
           >
             <MessageSquare className="w-3.5 h-3.5" />
             <span>Telegram</span>
@@ -76,7 +79,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ opportunity, isOpen, onC
             href={linkedinUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-blue-950/40 border border-blue-800/40 text-blue-300 hover:bg-blue-900/60 text-xs font-medium transition-colors"
+            className="flex items-center justify-center gap-2 p-2.5 rounded-np bg-np-accent/10 border border-np-accent/30 text-np-accent hover:bg-np-accent/20 text-xs font-medium transition-colors"
           >
             <span>LinkedIn</span>
           </a>
@@ -84,24 +87,24 @@ export const ShareModal: React.FC<ShareModalProps> = ({ opportunity, isOpen, onC
             href={twitterUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-200 hover:bg-slate-800 text-xs font-medium transition-colors"
+            className="flex items-center justify-center gap-2 p-2.5 rounded-np bg-np-surface-2 border border-np-border text-np-text hover:border-np-border-strong text-xs font-medium transition-colors"
           >
             <span>X (Twitter)</span>
           </a>
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+        <div className="flex items-center gap-2 bg-np-bg p-1.5 rounded-np border border-np-border">
           <input
             type="text"
             readOnly
             value={shareUrl}
-            className="bg-transparent text-xs text-slate-300 px-2 py-1 flex-1 outline-none font-mono truncate"
+            className="bg-transparent text-xs text-np-muted px-2 py-1 flex-1 outline-none truncate"
           />
           <button
             onClick={copyToClipboard}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-np bg-np-accent hover:bg-[#5a9dff] text-white text-xs font-medium transition-colors shrink-0"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             <span>{copied ? "Copied" : "Copy"}</span>
           </button>
         </div>

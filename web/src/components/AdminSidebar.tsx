@@ -1,22 +1,25 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  ShieldCheck, 
-  Radio, 
-  Database, 
-  FileText, 
+import {
+  LayoutDashboard,
+  ShieldCheck,
+  Radio,
+  Database,
+  FileText,
   ExternalLink,
   Activity,
   UploadCloud,
-  Sparkles
+  Sparkles,
+  Menu,
+  X,
 } from "lucide-react";
 
 export const AdminSidebar: React.FC = () => {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
 
   const menuItems = [
     { name: "Overview", href: "/admin", icon: LayoutDashboard },
@@ -28,62 +31,97 @@ export const AdminSidebar: React.FC = () => {
     { name: "Audit & Logs", href: "/admin/settings", icon: FileText },
   ];
 
-  return (
-    <aside className="w-64 bg-slate-900/60 border-r border-slate-800 p-4 flex flex-col justify-between shrink-0 min-h-[calc(100vh-4rem)]">
-      <div className="space-y-6">
-        <div>
-          <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            <Activity className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Admin Console</span>
-          </div>
-          <nav className="mt-2 space-y-1">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const active = item.href === "/admin"
+  const Nav = (
+    <div className="space-y-6">
+      <div>
+        <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-np-faint uppercase tracking-wider">
+          <Activity className="w-3.5 h-3.5 text-np-accent" />
+          <span>Admin Console</span>
+        </div>
+        <nav className="mt-2 space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const active =
+              item.href === "/admin"
                 ? pathname === "/admin"
                 : pathname === item.href || pathname.startsWith(`${item.href}/`);
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
-                    active
-                      ? "bg-indigo-600/20 text-indigo-300 border border-indigo-500/30"
-                      : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className={`w-4 h-4 ${active ? "text-indigo-400" : ""}`} />
-                    <span>{item.name}</span>
-                  </div>
-                  {item.badge && (
-                    <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-amber-500/20 text-amber-300 rounded">
-                      {item.badge}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        <div className="px-3 py-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 space-y-1.5">
-          <div className="font-semibold text-slate-200">System Invariants</div>
-          <p className="text-[10px] leading-relaxed">
-            All AI extractions undergo deterministic validation. Original sources remain the permanent source of truth.
-          </p>
-        </div>
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={`flex items-center justify-between px-3 py-2 rounded-np text-xs font-medium transition-colors ${
+                  active
+                    ? "bg-np-accent/15 text-np-accent border border-np-accent/30"
+                    : "text-np-muted hover:text-np-text hover:bg-np-surface-2"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Icon className={`w-4 h-4 ${active ? "text-np-accent" : ""}`} />
+                  <span>{item.name}</span>
+                </div>
+                {item.badge && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-np-warn/15 text-np-warn rounded">
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
 
-      <div className="pt-4 border-t border-slate-800">
-        <Link
-          href="/"
-          className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+      <div className="px-3 py-3 rounded-np bg-np-bg border border-np-border text-[11px] text-np-muted space-y-1.5">
+        <div className="font-semibold text-np-text">Publishing rules</div>
+        <p className="text-[10px] leading-relaxed">
+          AI extractions are validated before publish. Original sources stay the source of truth.
+        </p>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <div className="md:hidden border-b border-np-border bg-np-surface px-4 py-3 flex items-center justify-between">
+        <span className="text-sm font-semibold text-np-text">Admin</span>
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="p-2 rounded-np text-np-muted hover:text-np-text hover:bg-np-surface-2"
+          aria-label="Toggle admin menu"
+          aria-expanded={open}
         >
-          <span>Return to Portal</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </Link>
+          {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
       </div>
-    </aside>
+
+      {open && (
+        <div className="md:hidden border-b border-np-border bg-np-surface p-4">
+          {Nav}
+          <div className="pt-4 border-t border-np-border mt-4">
+            <Link
+              href="/"
+              className="flex items-center justify-between px-3 py-2 rounded-np text-xs font-medium text-np-muted hover:text-np-text hover:bg-np-surface-2"
+            >
+              <span>Return to portal</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      <aside className="hidden md:flex w-64 bg-np-surface/60 border-r border-np-border p-4 flex-col justify-between shrink-0 min-h-[calc(100vh-4rem)]">
+        {Nav}
+        <div className="pt-4 border-t border-np-border">
+          <Link
+            href="/"
+            className="flex items-center justify-between px-3 py-2 rounded-np text-xs font-medium text-np-muted hover:text-np-text hover:bg-np-surface-2 transition-colors"
+          >
+            <span>Return to portal</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </aside>
+    </>
   );
 };

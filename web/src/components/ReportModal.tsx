@@ -26,7 +26,6 @@ export const ReportModal: React.FC<ReportModalProps> = ({ opportunity, isOpen, o
       await reportOpportunity(opportunity.id, reportType, details);
       setSubmitted(true);
     } catch {
-      // fallback success
       setSubmitted(true);
     } finally {
       setSubmitting(false);
@@ -34,11 +33,11 @@ export const ReportModal: React.FC<ReportModalProps> = ({ opportunity, isOpen, o
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-np-bg/80 backdrop-blur-sm">
+      <div className="bg-np-surface border border-np-border rounded-np-lg max-w-md w-full p-6 shadow-np-lg relative">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-np-muted hover:text-np-text transition-colors"
           aria-label="Close modal"
         >
           <X className="w-5 h-5" />
@@ -46,81 +45,72 @@ export const ReportModal: React.FC<ReportModalProps> = ({ opportunity, isOpen, o
 
         {submitted ? (
           <div className="text-center py-6">
-            <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 bg-np-verify/10 text-np-verify border border-np-verify/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Report Submitted</h3>
-            <p className="text-xs text-slate-400 mb-6">
-              Thank you for keeping Nexus Pulse accurate. Our provenance verification engine and editorial team will review this notice.
+            <h3 className="text-lg font-semibold text-np-text mb-2">Report submitted</h3>
+            <p className="text-sm text-np-muted mb-6">
+              Thanks for helping keep NexusPulse accurate. Our team will review this notice.
             </p>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-medium transition-colors"
-            >
+            <button onClick={onClose} className="np-btn-secondary text-xs">
               Done
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <div className="p-2.5 rounded-np bg-np-warn/10 text-np-warn border border-np-warn/20">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white">Report Inaccuracy</h3>
-                <p className="text-xs text-slate-400">Provenance feedback for verification review</p>
+                <h3 className="text-base font-semibold text-np-text">Report inaccuracy</h3>
+                <p className="text-xs text-np-muted">Help us correct this listing</p>
               </div>
             </div>
 
             <div className="space-y-4 mb-5">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Issue Type
-                </label>
+                <label className="block text-xs font-medium text-np-muted mb-1.5">Issue type</label>
                 <select
                   value={reportType}
                   onChange={(e) => setReportType(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  className="np-input"
                 >
-                  <option value="incorrect_date">Incorrect Deadline or Event Date</option>
-                  <option value="broken_link">Broken or Inaccessible Registration Link</option>
-                  <option value="duplicate_event">Duplicate of Another Opportunity</option>
-                  <option value="incorrect_eligibility">Misleading Eligibility or Requirements</option>
-                  <option value="cancelled_event">Event Has Been Cancelled or Postponed</option>
-                  <option value="other">Other Provenance Issue</option>
+                  <option value="incorrect_date">Incorrect deadline or event date</option>
+                  <option value="broken_link">Broken or inaccessible registration link</option>
+                  <option value="duplicate_event">Duplicate of another opportunity</option>
+                  <option value="incorrect_eligibility">Misleading eligibility or requirements</option>
+                  <option value="cancelled_event">Event cancelled or postponed</option>
+                  <option value="other">Other issue</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Details & Evidence Links
+                <label className="block text-xs font-medium text-np-muted mb-1.5">
+                  Details & evidence links
                 </label>
                 <textarea
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
-                  placeholder="Provide correct dates, official announcement links, or notes..."
+                  placeholder="Provide correct dates, official announcement links, or notes…"
                   rows={3}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 resize-none"
+                  className="np-input resize-none"
                   required
                 />
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition-colors"
-              >
+              <button type="button" onClick={onClose} className="np-btn-secondary text-xs">
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-medium transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-np bg-np-danger hover:bg-[#e0666c] text-white text-xs font-semibold transition-colors disabled:opacity-50"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>{submitting ? "Submitting..." : "Submit Report"}</span>
+                <span>{submitting ? "Submitting…" : "Submit report"}</span>
               </button>
             </div>
           </form>

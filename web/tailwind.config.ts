@@ -9,6 +9,22 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        np: {
+          bg: "#070A0F",
+          surface: "#0E141B",
+          "surface-2": "#151C25",
+          border: "#243041",
+          "border-strong": "#3A4B61",
+          text: "#E8EEF6",
+          muted: "#93A1B5",
+          faint: "#6B7A90",
+          accent: "#3D8BFF",
+          "accent-soft": "rgba(61, 139, 255, 0.12)",
+          verify: "#1F9B6A",
+          warn: "#D69A2D",
+          danger: "#D4535A",
+          online: "#2AA8C9",
+        },
         brand: {
           50: "#eef2ff",
           100: "#e0e7ff",
@@ -23,11 +39,32 @@ const config: Config = {
           950: "#1e1b4b",
         },
         pulse: {
-          cyan: "#06b6d4",
-          emerald: "#10b981",
-          amber: "#f59e0b",
-          rose: "#f43f5e",
-        }
+          cyan: "#2AA8C9",
+          emerald: "#1F9B6A",
+          amber: "#D69A2D",
+          rose: "#D4535A",
+        },
+      },
+      borderRadius: {
+        np: "0.625rem",
+        "np-lg": "0.875rem",
+        "np-xl": "1.25rem",
+      },
+      boxShadow: {
+        np: "0 1px 0 rgba(255,255,255,0.04), 0 8px 24px -16px rgba(0,0,0,0.55)",
+        "np-lg": "0 1px 0 rgba(255,255,255,0.04), 0 18px 40px -24px rgba(0,0,0,0.7)",
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+      },
+      keyframes: {
+        "np-fade": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+      },
+      animation: {
+        "np-fade": "np-fade 0.35s ease-out",
       },
     },
   },

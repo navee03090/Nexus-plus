@@ -12,7 +12,9 @@ interface OpportunityActionButtonsProps {
   opportunity: Opportunity;
 }
 
-export const OpportunityActionButtons: React.FC<OpportunityActionButtonsProps> = ({ opportunity }) => {
+export const OpportunityActionButtons: React.FC<OpportunityActionButtonsProps> = ({
+  opportunity,
+}) => {
   const [isSaved, setIsSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -38,15 +40,15 @@ export const OpportunityActionButtons: React.FC<OpportunityActionButtonsProps> =
         <button
           onClick={handleToggleSave}
           disabled={saving}
-          className={`flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium border transition-colors ${
+          className={`flex items-center justify-center gap-2 px-3.5 py-2 rounded-np text-xs font-medium border transition-colors ${
             isSaved
-              ? "bg-emerald-950/60 text-emerald-300 border-emerald-500/40"
-              : "bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700/60"
+              ? "bg-np-verify/10 text-np-verify border-np-verify/40"
+              : "bg-np-surface-2 text-np-text border-np-border hover:border-np-border-strong"
           }`}
         >
           {isSaved ? (
             <>
-              <BookmarkCheck className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400" />
+              <BookmarkCheck className="w-3.5 h-3.5 fill-np-verify" />
               <span>Saved</span>
             </>
           ) : (
@@ -59,15 +61,15 @@ export const OpportunityActionButtons: React.FC<OpportunityActionButtonsProps> =
 
         <button
           onClick={() => setShareOpen(true)}
-          className="flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700/60 text-xs font-medium transition-colors"
+          className="flex items-center justify-center gap-2 px-3.5 py-2 rounded-np bg-np-surface-2 text-np-text border border-np-border hover:border-np-border-strong text-xs font-medium transition-colors"
         >
-          <Share2 className="w-3.5 h-3.5 text-indigo-400" />
+          <Share2 className="w-3.5 h-3.5 text-np-accent" />
           <span>Share</span>
         </button>
 
         <button
           onClick={() => setReportOpen(true)}
-          className="flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 text-slate-400 border border-slate-700 hover:text-rose-400 hover:bg-slate-700/60 text-xs font-medium transition-colors"
+          className="flex items-center justify-center gap-2 px-3.5 py-2 rounded-np bg-np-surface-2 text-np-muted border border-np-border hover:text-np-danger hover:border-np-danger/40 text-xs font-medium transition-colors"
         >
           <AlertTriangle className="w-3.5 h-3.5" />
           <span>Report</span>

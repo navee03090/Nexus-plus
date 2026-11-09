@@ -29,7 +29,6 @@ export default function RegisterPage() {
         },
       });
       if (error) {
-        // demo fallback
         router.push("/for-you");
       } else {
         router.push("/for-you");
@@ -45,88 +44,80 @@ export default function RegisterPage() {
     <div className="flex-1 flex items-center justify-center p-4 py-16">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-600 text-white font-black text-xl shadow-lg shadow-indigo-600/30">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-np-lg bg-np-surface border border-np-border text-np-accent font-bold text-xl">
             NP
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Create Nexus Pulse Account</h1>
-          <p className="text-xs text-slate-400">
-            Never miss hackathons, research grants, or incubation deadlines
+          <h1 className="text-2xl font-bold text-np-text tracking-tight">Create a NexusPulse account</h1>
+          <p className="text-sm text-np-muted">
+            Never miss scholarships, hackathons, or incubation deadlines across Pakistan
           </p>
         </div>
 
-        <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/80 border border-slate-800 shadow-xl backdrop-blur-sm">
+        <div className="p-6 sm:p-8 np-panel shadow-np">
           {errorMsg && (
-            <div className="p-3 mb-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+            <div className="p-3 mb-4 rounded-np bg-np-danger/10 border border-np-danger/30 text-np-danger text-xs">
               {errorMsg}
             </div>
           )}
 
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Full Name
-              </label>
+              <label className="block text-xs font-medium text-np-muted mb-1.5">Full name</label>
               <div className="relative">
-                <User className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
+                <User className="absolute left-3 top-3 w-4 h-4 text-np-faint" />
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Muhammad Naveed"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
+                  placeholder="Your full name"
+                  className="np-input pl-9"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                University / Official Email
+              <label className="block text-xs font-medium text-np-muted mb-1.5">
+                University / official email
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
+                <Mail className="absolute left-3 top-3 w-4 h-4 text-np-faint" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="student@uetpeshawar.edu.pk"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
+                  placeholder="student@university.edu.pk"
+                  className="np-input pl-9"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Password
-              </label>
+              <label className="block text-xs font-medium text-np-muted mb-1.5">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
+                <Lock className="absolute left-3 top-3 w-4 h-4 text-np-faint" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
+                  className="np-input pl-9"
                   required
                 />
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors shadow-lg shadow-indigo-600/30 disabled:opacity-50"
-            >
-              <span>{loading ? "Creating Account..." : "Create Account"}</span>
+            <button type="submit" disabled={loading} className="w-full np-btn-primary py-3 text-xs">
+              <span>{loading ? "Creating account…" : "Create account"}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-slate-400">
+          <div className="mt-6 text-center text-xs text-np-muted">
             Already have an account?{" "}
-            <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium">
-              Sign In
+            <Link href="/login" className="text-np-accent hover:text-[#7aadff] font-medium">
+              Sign in
             </Link>
           </div>
         </div>

@@ -313,14 +313,14 @@ export default function SourcesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 mb-1">
+          <div className="flex items-center gap-2 text-xs font-semibold text-np-verify mb-1">
             <Radio className="w-4 h-4 animate-pulse" />
             <span>Source Ingestion Registry & Social Hub</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             Monitored Sources & Social Webhooks
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-np-muted mt-1">
             Continuous ingestion from university notice boards, government portals, Meta Webhooks & Apify Cloud Scrapers.
           </p>
         </div>
@@ -328,7 +328,7 @@ export default function SourcesPage() {
         <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
           <button
             onClick={() => setAddModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-lg shadow-indigo-600/30"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-np-accent hover:bg-[#5a9dff] text-white text-xs font-semibold transition-colors shadow-lg shadow-np"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Monitored Source</span>
@@ -336,7 +336,7 @@ export default function SourcesPage() {
 
           <button
             onClick={() => setSimulatorOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors border border-slate-700"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-np-surface-2 hover:bg-np-surface-2 text-np-text text-xs font-semibold transition-colors border border-np-border-strong"
           >
             <Play className="w-3.5 h-3.5" />
             <span>Test Simulator</span>
@@ -347,106 +347,106 @@ export default function SourcesPage() {
       {/* Dual Social Media Hub: Meta Webhook + Apify Scraper Controls */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Card 1: Official Meta Graph API Webhooks */}
-        <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 space-y-5 shadow-xl relative overflow-hidden">
+        <div className="rounded-np-lg bg-np-surface border border-np-border p-6 space-y-5 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-lg">
+              <div className="w-10 h-10 rounded-np-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-lg">
                 f
               </div>
               <div>
                 <h2 className="text-sm font-bold text-white flex items-center gap-2">
                   <span>Meta Official Webhooks</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-700/60 text-slate-300 border border-slate-600">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-np-surface-2 text-np-muted border border-slate-600">
                     Needs Meta app review
                   </span>
                 </h2>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-np-muted">
                   Instant push events for official Facebook Pages & Instagram
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-3 bg-slate-950/70 rounded-2xl p-4 border border-slate-800/80 text-xs font-mono">
+          <div className="space-y-3 bg-np-bg/70 rounded-np-lg p-4 border border-np-border text-xs font-mono">
             <div>
-              <div className="flex items-center justify-between text-slate-400 mb-1">
+              <div className="flex items-center justify-between text-np-muted mb-1">
                 <span className="text-[11px] uppercase tracking-wider font-sans font-semibold">Callback URL</span>
                 <button
                   onClick={() => copyToClipboard(`${origin}/api/v1/ingestion/social/meta`, "meta_url")}
-                  className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-sans"
+                  className="flex items-center gap-1 text-[11px] text-np-accent hover:text-np-accent font-sans"
                 >
-                  {copiedItem === "meta_url" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  {copiedItem === "meta_url" ? <Check className="w-3 h-3 text-np-verify" /> : <Copy className="w-3 h-3" />}
                   <span>{copiedItem === "meta_url" ? "Copied" : "Copy"}</span>
                 </button>
               </div>
-              <div suppressHydrationWarning className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-200 truncate font-mono">
+              <div suppressHydrationWarning className="p-2 rounded-lg bg-np-surface border border-np-border text-[11px] text-np-text truncate font-mono">
                 {mounted ? `${origin}/api/v1/ingestion/social/meta` : "http://localhost:3000/api/v1/ingestion/social/meta"}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <div className="flex items-center justify-between text-slate-400 mb-1">
+                <div className="flex items-center justify-between text-np-muted mb-1">
                   <span className="text-[11px] uppercase tracking-wider font-sans font-semibold">Verify Token</span>
                   <button
                     onClick={() => copyToClipboard("nexus_pulse_meta_verify_2026", "verify_token")}
-                    className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-sans"
+                    className="flex items-center gap-1 text-[11px] text-np-accent hover:text-np-accent font-sans"
                   >
-                    {copiedItem === "verify_token" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    {copiedItem === "verify_token" ? <Check className="w-3 h-3 text-np-verify" /> : <Copy className="w-3 h-3" />}
                     <span>{copiedItem === "verify_token" ? "Copied" : "Copy"}</span>
                   </button>
                 </div>
-                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-200 truncate">
+                <div className="p-2 rounded-lg bg-np-surface border border-np-border text-[11px] text-np-text truncate">
                   nexus_pulse_meta_verify_2026
                 </div>
               </div>
 
               <div>
-                <div className="flex items-center justify-between text-slate-400 mb-1">
+                <div className="flex items-center justify-between text-np-muted mb-1">
                   <span className="text-[11px] uppercase tracking-wider font-sans font-semibold">Meta App ID</span>
                   <button
                     onClick={() => copyToClipboard("1528995888860179", "meta_appid")}
-                    className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-sans"
+                    className="flex items-center gap-1 text-[11px] text-np-accent hover:text-np-accent font-sans"
                   >
-                    {copiedItem === "meta_appid" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    {copiedItem === "meta_appid" ? <Check className="w-3 h-3 text-np-verify" /> : <Copy className="w-3 h-3" />}
                     <span>{copiedItem === "meta_appid" ? "Copied" : "Copy"}</span>
                   </button>
                 </div>
-                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-200 truncate">
+                <div className="p-2 rounded-lg bg-np-surface border border-np-border text-[11px] text-np-text truncate">
                   1528995888860179
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="text-[11px] text-slate-400 flex items-center justify-between">
+          <div className="text-[11px] text-np-muted flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <ShieldCheck className="w-3.5 h-3.5 text-np-verify" />
               <span>HMAC-SHA256 signature verification enabled</span>
             </span>
-            <span className="text-slate-500 font-mono">App: n8n</span>
+            <span className="text-np-faint font-mono">App: n8n</span>
           </div>
         </div>
 
         {/* Card 2: Apify Cloud Scraper Runner */}
-        <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 space-y-5 shadow-xl relative overflow-hidden">
+        <div className="rounded-np-lg bg-np-surface border border-np-border p-6 space-y-5 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-lg">
-                <Zap className="w-5 h-5 text-amber-400" />
+              <div className="w-10 h-10 rounded-np-lg bg-amber-500/20 text-np-warn border border-np-warn/30 flex items-center justify-center font-bold text-lg">
+                <Zap className="w-5 h-5 text-np-warn" />
               </div>
               <div>
                 <h2 className="text-sm font-bold text-white flex items-center gap-2">
                   <span>Apify Cloud Scraper Engine</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-np-warn border border-np-warn/30">
                     Live Connected
                   </span>
                 </h2>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-np-muted">
                   Scrapes public Facebook Pages & Instagram feeds without requiring Meta App approvals
                 </p>
               </div>
@@ -455,7 +455,7 @@ export default function SourcesPage() {
 
           {/* Preset Buttons */}
           <div className="space-y-1.5">
-            <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">
+            <span className="text-[11px] uppercase tracking-wider font-semibold text-np-muted">
               Quick Pakistani Tech Presets:
             </span>
             <div className="flex flex-wrap gap-1.5">
@@ -468,8 +468,8 @@ export default function SourcesPage() {
                   }}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
                     apifyUrl === p.url
-                      ? "bg-indigo-600 text-white border-indigo-500"
-                      : "bg-slate-950 text-slate-300 border-slate-800 hover:bg-slate-800"
+                      ? "bg-np-accent text-white border-indigo-500"
+                      : "bg-np-bg text-np-muted border-np-border hover:bg-np-surface-2"
                   }`}
                   title={p.description}
                 >
@@ -488,14 +488,14 @@ export default function SourcesPage() {
                   placeholder="https://www.facebook.com/kpitbgov or @gdgpeshawar"
                   value={apifyUrl}
                   onChange={(e) => setApifyUrl(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
+                  className="w-full bg-np-bg border border-np-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
                 />
               </div>
               <div>
                 <select
                   value={apifyPlatform}
                   onChange={(e) => setApifyPlatform(e.target.value as "Facebook" | "Instagram")}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                  className="w-full bg-np-bg border border-np-border rounded-xl px-2.5 py-2 text-xs text-np-text focus:outline-none focus:border-amber-500"
                 >
                   <option value="Facebook">Facebook</option>
                   <option value="Instagram">Instagram</option>
@@ -504,8 +504,8 @@ export default function SourcesPage() {
             </div>
 
             <div className="flex items-center justify-between pt-1">
-              <span className="text-[11px] text-slate-400">
-                Token user: <span className="text-emerald-400 font-mono font-semibold">naveedalpha9898</span>
+              <span className="text-[11px] text-np-muted">
+                Token user: <span className="text-np-verify font-mono font-semibold">naveedalpha9898</span>
               </span>
 
               <button
@@ -522,7 +522,7 @@ export default function SourcesPage() {
               <div
                 className={`p-3 rounded-xl border text-xs font-mono animate-fadeIn ${
                   apifyFeedback.success
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                    ? "bg-np-verify/10 border-np-verify/30 text-np-verify"
                     : "bg-red-500/10 border-red-500/30 text-red-300"
                 }`}
               >
@@ -530,15 +530,15 @@ export default function SourcesPage() {
                   <div className="space-y-2">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
-                        <span className="font-semibold text-emerald-400">✓ Dispatched:</span> Run ID{" "}
-                        <span className="text-white font-mono bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">{apifyFeedback.run_id}</span>{" "}
-                        <span className="text-slate-400">({apifyFeedback.status || "READY"})</span>
+                        <span className="font-semibold text-np-verify">✓ Dispatched:</span> Run ID{" "}
+                        <span className="text-white font-mono bg-np-surface-2 px-1.5 py-0.5 rounded border border-np-border-strong">{apifyFeedback.run_id}</span>{" "}
+                        <span className="text-np-muted">({apifyFeedback.status || "READY"})</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleSyncApifyRun(apifyFeedback.run_id!, apifyPlatform)}
                         disabled={apifySyncing}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-sans text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-md disabled:opacity-50"
+                        className="px-3 py-1.5 rounded-lg bg-np-verify hover:bg-emerald-500 text-white font-sans text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-md disabled:opacity-50"
                       >
                         <RefreshCw className={`w-3.5 h-3.5 ${apifySyncing ? "animate-spin" : ""}`} />
                         <span>{apifySyncing ? "Syncing..." : "Sync Results to Database"}</span>
@@ -547,7 +547,7 @@ export default function SourcesPage() {
 
                     {apifySyncResult && (
                       <div className={`mt-2 p-2.5 rounded-lg border text-xs font-sans ${
-                        apifySyncResult.success ? "bg-emerald-950/50 border-emerald-500/40 text-emerald-200" : "bg-amber-950/50 border-amber-500/40 text-amber-200"
+                        apifySyncResult.success ? "bg-emerald-950/50 border-np-verify/40 text-np-verify" : "bg-amber-950/50 border-np-warn/40 text-np-warn"
                       }`}>
                         {apifySyncResult.success ? (
                           <span>
@@ -562,7 +562,7 @@ export default function SourcesPage() {
                 ) : (
                   <div>
                     <span className="font-semibold">⚠ Error:</span> {apifyFeedback.error}
-                    {apifyFeedback.hint && <div className="text-[11px] text-slate-400 mt-1">{apifyFeedback.hint}</div>}
+                    {apifyFeedback.hint && <div className="text-[11px] text-np-muted mt-1">{apifyFeedback.hint}</div>}
                   </div>
                 )}
               </div>
@@ -572,14 +572,14 @@ export default function SourcesPage() {
       </div>
 
       {/* Filter Tabs & Search Header */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+      <div className="flex items-center justify-between border-b border-np-border pb-3">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setFilterCategory("all")}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
               filterCategory === "all"
-                ? "bg-indigo-600 text-white"
-                : "bg-slate-900 text-slate-400 hover:text-white"
+                ? "bg-np-accent text-white"
+                : "bg-np-surface text-np-muted hover:text-np-text"
             }`}
           >
             All Channels ({sources.length})
@@ -588,8 +588,8 @@ export default function SourcesPage() {
             onClick={() => setFilterCategory("web")}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
               filterCategory === "web"
-                ? "bg-indigo-600 text-white"
-                : "bg-slate-900 text-slate-400 hover:text-white"
+                ? "bg-np-accent text-white"
+                : "bg-np-surface text-np-muted hover:text-np-text"
             }`}
           >
             Websites & Portals ({sources.filter((s) => s.category === "web").length})
@@ -598,24 +598,24 @@ export default function SourcesPage() {
             onClick={() => setFilterCategory("social")}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
               filterCategory === "social"
-                ? "bg-indigo-600 text-white"
-                : "bg-slate-900 text-slate-400 hover:text-white"
+                ? "bg-np-accent text-white"
+                : "bg-np-surface text-np-muted hover:text-np-text"
             }`}
           >
             Social Channels ({sources.filter((s) => s.category === "social").length})
           </button>
         </div>
 
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-np-faint">
           Manual crawl only — auto-crawl is off
         </span>
       </div>
 
       {/* Sources Table */}
-      <div className="rounded-3xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
+      <div className="rounded-np-lg bg-np-surface border border-np-border overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/80 text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800">
+          <table className="w-full text-left text-xs text-np-muted">
+            <thead className="bg-np-bg/80 text-[11px] font-semibold uppercase tracking-wider text-np-muted border-b border-np-border">
               <tr>
                 <th className="px-6 py-4">Source Name & Platform</th>
                 <th className="px-6 py-4">Parser Key</th>
@@ -629,63 +629,63 @@ export default function SourcesPage() {
             <tbody className="divide-y divide-slate-800/80">
               {sourcesLoading && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-10 text-center text-np-faint">
                     Loading sources from the API…
                   </td>
                 </tr>
               )}
               {!sourcesLoading && filteredSources.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-10 text-center text-np-faint">
                     No sources in the database yet. Use Add Monitored Source, then Crawl Now.
                   </td>
                 </tr>
               )}
               {filteredSources.map((src) => (
-                <tr key={src.id} className="hover:bg-slate-800/40 transition-colors">
+                <tr key={src.id} className="hover:bg-np-surface-2/40 transition-colors">
                   <td className="px-6 py-4">
                     <div className="font-semibold text-white flex items-center gap-2">
                       <span>{src.name}</span>
                       {src.category === "social" && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-indigo-500/20 text-np-accent border border-np-accent/30">
                           Social
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                    <div className="text-[11px] text-np-faint flex items-center gap-1 mt-0.5">
                       <span>{src.platform}</span>
                       <span>•</span>
                       <a
                         href={src.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-indigo-400 hover:underline flex items-center gap-0.5 truncate max-w-xs"
+                        className="text-np-accent hover:underline flex items-center gap-0.5 truncate max-w-xs"
                       >
                         <span className="truncate">{src.url}</span>
                         <ExternalLink className="w-3 h-3 shrink-0" />
                       </a>
                     </div>
                   </td>
-                  <td className="px-6 py-4 font-mono text-[11px] text-indigo-300">
+                  <td className="px-6 py-4 font-mono text-[11px] text-np-accent">
                     {src.parser_key}
                   </td>
-                  <td className="px-6 py-4 text-slate-400">
+                  <td className="px-6 py-4 text-np-muted">
                     {src.crawl_frequency >= 3600
                       ? `${src.crawl_frequency / 3600}h`
                       : `${src.crawl_frequency / 60}m`}
                   </td>
                   <td className="px-6 py-4">
-                    <span className="font-mono text-emerald-400 font-semibold">
+                    <span className="font-mono text-np-verify font-semibold">
                       {Math.round(src.trust_score * 100)}%
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-np-verify border border-np-verify/30">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       <span>Active</span>
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-slate-400 font-mono text-[11px]">
+                  <td className="px-6 py-4 text-np-muted font-mono text-[11px]">
                     {src.last_checked_at}
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -695,8 +695,8 @@ export default function SourcesPage() {
                         disabled={crawlingId === src.id}
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
                           crawlingId === src.id
-                            ? "bg-indigo-600/30 text-indigo-300 border-indigo-500/40 cursor-wait"
-                            : "bg-indigo-600 hover:bg-indigo-500 text-white border-transparent shadow-sm shadow-indigo-600/30"
+                            ? "bg-np-accent/30 text-np-accent border-np-accent/40 cursor-wait"
+                            : "bg-np-accent hover:bg-[#5a9dff] text-white border-transparent shadow-sm shadow-np"
                         }`}
                         title="Trigger immediate crawl on this source"
                       >
@@ -720,14 +720,14 @@ export default function SourcesPage() {
                           setSimType(src.category === "social" ? "social" : "website");
                           setSimulatorOpen(true);
                         }}
-                        className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors border border-slate-700/60"
+                        className="px-2 py-1 rounded-lg bg-np-surface-2 hover:bg-np-surface-2 text-xs font-semibold text-np-muted transition-colors border border-np-border"
                       >
                         Test
                       </button>
                     </div>
 
                     {crawlFeedback[src.id] && (
-                      <div className="text-[10px] text-indigo-300 mt-1 font-mono text-right animate-fadeIn">
+                      <div className="text-[10px] text-np-accent mt-1 font-mono text-right animate-fadeIn">
                         {crawlFeedback[src.id]}
                       </div>
                     )}
@@ -741,22 +741,22 @@ export default function SourcesPage() {
 
       {/* Simulator Modal */}
       {simulatorOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl relative space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-np-bg/80 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-np-surface border border-np-border rounded-np-lg max-w-xl w-full p-6 sm:p-7 shadow-2xl relative space-y-5">
             <button
               onClick={() => setSimulatorOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-white"
+              className="absolute top-5 right-5 text-np-muted hover:text-np-text"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              <div className="p-2.5 rounded-np-lg bg-indigo-500/10 text-np-accent border border-np-accent/20">
                 <Play className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-white">Source Ingestion Simulator</h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-np-muted">
                   Safely execute adapter fetch and multimodal AI extraction without writing to database
                 </p>
               </div>
@@ -764,27 +764,27 @@ export default function SourcesPage() {
 
             <form onSubmit={runSimulation} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-np-muted mb-1">
                   Target Endpoint URL
                 </label>
                 <input
                   type="url"
                   value={simUrl}
                   onChange={(e) => setSimUrl(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-np-bg border border-np-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-np-accent"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                  <label className="block text-xs font-medium text-np-muted mb-1">
                     Adapter Type
                   </label>
                   <select
                     value={simType}
                     onChange={(e) => setSimType(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-np-bg border border-np-border rounded-xl px-3 py-2 text-xs text-np-text focus:outline-none focus:border-np-accent"
                   >
                     <option value="website">Web HTML Scraper</option>
                     <option value="rss">RSS / Atom Feed</option>
@@ -795,14 +795,14 @@ export default function SourcesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                  <label className="block text-xs font-medium text-np-muted mb-1">
                     Parser Key
                   </label>
                   <input
                     type="text"
                     value={simParser}
                     onChange={(e) => setSimParser(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-np-bg border border-np-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-np-accent"
                   />
                 </div>
               </div>
@@ -811,7 +811,7 @@ export default function SourcesPage() {
                 <button
                   type="submit"
                   disabled={simulating}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-np-accent hover:bg-[#5a9dff] text-white text-xs font-semibold transition-colors disabled:opacity-50"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${simulating ? "animate-spin" : ""}`} />
                   <span>{simulating ? "Executing Ingestion..." : "Run Test Simulation"}</span>
@@ -820,12 +820,12 @@ export default function SourcesPage() {
             </form>
 
             {simResult && (
-              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
-                <div className="font-semibold text-emerald-400 flex items-center gap-1.5">
+              <div className="p-4 rounded-np-lg bg-np-bg border border-np-border space-y-2 text-xs">
+                <div className="font-semibold text-np-verify flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Simulation Succeeded</span>
                 </div>
-                <pre className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto max-h-48">
+                <pre className="p-3 rounded-xl bg-np-surface border border-np-border text-[11px] font-mono text-np-muted overflow-x-auto max-h-48">
                   {JSON.stringify(simResult, null, 2)}
                 </pre>
               </div>
@@ -836,22 +836,22 @@ export default function SourcesPage() {
 
       {/* Add Source Modal */}
       {addModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl relative space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-np-bg/80 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-np-surface border border-np-border rounded-np-lg max-w-xl w-full p-6 sm:p-7 shadow-2xl relative space-y-5">
             <button
               onClick={() => setAddModalOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-white"
+              className="absolute top-5 right-5 text-np-muted hover:text-np-text"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              <div className="p-2.5 rounded-np-lg bg-indigo-500/10 text-np-accent border border-np-accent/20">
                 <Plus className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-white">Add Monitored Source Portal</h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-np-muted">
                   Register a university portal, government notice board or social channel
                 </p>
               </div>
@@ -859,7 +859,7 @@ export default function SourcesPage() {
 
             <form onSubmit={handleAddSource} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-np-muted mb-1">
                   Source Name <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -868,12 +868,12 @@ export default function SourcesPage() {
                   placeholder="e.g. NUST Islamabad Events & Notices"
                   value={newSourceName}
                   onChange={(e) => setNewSourceName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-np-bg border border-np-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-np-accent"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1">
+                <label className="block text-xs font-medium text-np-muted mb-1">
                   Target Endpoint / URL <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -882,19 +882,19 @@ export default function SourcesPage() {
                   placeholder="https://nust.edu.pk/events or https://facebook.com/nust"
                   value={newSourceUrl}
                   onChange={(e) => setNewSourceUrl(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-np-bg border border-np-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-np-accent"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                  <label className="block text-xs font-medium text-np-muted mb-1">
                     Platform Category
                   </label>
                   <select
                     value={newSourcePlatform}
                     onChange={(e) => setNewSourcePlatform(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-np-bg border border-np-border rounded-xl px-3 py-2 text-xs text-np-text focus:outline-none focus:border-np-accent"
                   >
                     <option value="University Website">University Website</option>
                     <option value="Government Portal">Government Portal</option>
@@ -906,13 +906,13 @@ export default function SourcesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                  <label className="block text-xs font-medium text-np-muted mb-1">
                     Ingestion Adapter
                   </label>
                   <select
                     value={newSourceType}
                     onChange={(e) => setNewSourceType(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-np-bg border border-np-border rounded-xl px-3 py-2 text-xs text-np-text focus:outline-none focus:border-np-accent"
                   >
                     <option value="Website">Web HTML & Tables</option>
                     <option value="Social">Social Media (Apify/Meta)</option>
@@ -923,13 +923,13 @@ export default function SourcesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                  <label className="block text-xs font-medium text-np-muted mb-1">
                     Crawl Frequency
                   </label>
                   <select
                     value={newSourceFrequency}
                     onChange={(e) => setNewSourceFrequency(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-np-bg border border-np-border rounded-xl px-3 py-2 text-xs text-np-text focus:outline-none focus:border-np-accent"
                   >
                     <option value={1800}>Every 30 Minutes</option>
                     <option value={3600}>Every 1 Hour (Standard)</option>
@@ -939,13 +939,13 @@ export default function SourcesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                  <label className="block text-xs font-medium text-np-muted mb-1">
                     Trust Score
                   </label>
                   <select
                     value={newSourceTrust}
                     onChange={(e) => setNewSourceTrust(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-np-bg border border-np-border rounded-xl px-3 py-2 text-xs text-np-text focus:outline-none focus:border-np-accent"
                   >
                     <option value={0.99}>99% (Official Verified Authority)</option>
                     <option value={0.95}>95% (University Notice Board / Page)</option>
@@ -964,14 +964,14 @@ export default function SourcesPage() {
                 <button
                   type="button"
                   onClick={() => setAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-np-muted hover:text-np-text"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={addingSource}
-                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-np-accent hover:bg-[#5a9dff] text-white text-xs font-semibold transition-colors disabled:opacity-50"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>{addingSource ? "Registering Source..." : "Save & Start Crawling"}</span>

@@ -159,10 +159,10 @@ function overlayDraft(base: Draft, saved?: Partial<Opportunity>, flyerUrl?: stri
 }
 
 const inputClass = (flagged: boolean) =>
-  `w-full rounded-xl border px-3 py-2.5 text-xs text-slate-100 outline-none focus:border-indigo-400 ${
+  `w-full rounded-np border px-3 py-2.5 text-xs text-np-text outline-none focus:border-np-accent focus:ring-1 focus:ring-np-accent ${
     flagged
-      ? "border-amber-500/50 bg-amber-500/10"
-      : "border-slate-800 bg-slate-950"
+      ? "border-np-warn/50 bg-np-warn/10"
+      : "border-np-border bg-np-bg"
   }`;
 
 function Label({
@@ -179,15 +179,15 @@ function Label({
   const over = limit != null && words != null && words > limit;
   return (
     <div className="mb-1 flex items-center justify-between gap-2">
-      <span className="text-[11px] font-semibold text-slate-400">{text}</span>
+      <span className="text-[11px] font-semibold text-np-muted">{text}</span>
       <div className="flex items-center gap-2">
         {limit != null && words != null && (
-          <span className={`text-[10px] font-mono ${over ? "text-amber-300 font-semibold" : "text-slate-500"}`}>
+          <span className={`text-[10px] font-mono ${over ? "text-np-warn font-semibold" : "text-np-faint"}`}>
             {words}/{limit} words
           </span>
         )}
-        {missing && <span className="text-[10px] font-semibold text-amber-300">Missing</span>}
-        {over && <span className="text-[10px] font-semibold text-amber-300">Too long</span>}
+        {missing && <span className="text-[10px] font-semibold text-np-warn">Missing</span>}
+        {over && <span className="text-[10px] font-semibold text-np-warn">Too long</span>}
       </div>
     </div>
   );
@@ -374,8 +374,8 @@ export default function VerificationReviewPage() {
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto py-16 text-center space-y-4">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mx-auto" />
-        <p className="text-xs text-slate-400">Loading verification queue…</p>
+        <Loader2 className="w-8 h-8 animate-spin text-np-accent mx-auto" />
+        <p className="text-xs text-np-muted">Loading verification queue…</p>
       </div>
     );
   }
@@ -383,13 +383,13 @@ export default function VerificationReviewPage() {
   if (!current) {
     return (
       <div className="max-w-4xl mx-auto py-16 text-center space-y-4">
-        <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto ${
-          loadError ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+        <div className={`w-16 h-16 rounded-np-lg border flex items-center justify-center mx-auto ${
+          loadError ? "bg-np-warn/10 text-np-warn border-np-warn/20" : "bg-np-verify/10 text-np-verify border-np-verify/20"
         }`}>
           {loadError ? <AlertTriangle className="w-8 h-8" /> : <CheckCircle2 className="w-8 h-8" />}
         </div>
         <h2 className="text-xl font-bold text-white">{loadError ? "Verification queue did not load" : "Verification queue is clear"}</h2>
-        <p className="text-xs text-slate-400">{loadError || "Nothing is waiting for a decision."}</p>
+        <p className="text-xs text-np-muted">{loadError || "Nothing is waiting for a decision."}</p>
       </div>
     );
   }
@@ -405,12 +405,12 @@ export default function VerificationReviewPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">Verification queue</h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-np-muted mt-1">
             {items.length} waiting. Fill the real title and a deadline or apply link, then publish.
           </p>
         </div>
         <div className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
-          ready ? "bg-emerald-500/15 text-emerald-300" : "bg-amber-500/15 text-amber-200"
+          ready ? "bg-np-verify/15 text-np-verify" : "bg-np-warn/15 text-np-warn"
         }`}>
           {ready ? "Ready to publish" : "Fill missing details"}
           {dirty ? " · Unsaved" : ""}
@@ -418,17 +418,17 @@ export default function VerificationReviewPage() {
       </div>
 
       {actionNotice && (
-        <div className={`rounded-2xl border px-4 py-3 text-xs ${
+        <div className={`rounded-np-lg border px-4 py-3 text-xs ${
           noticeTone === "error"
-            ? "border-rose-500/40 bg-rose-950/50 text-rose-200"
-            : "border-emerald-500/40 bg-emerald-950/50 text-emerald-200"
+            ? "border-np-danger/40 bg-np-danger/10 text-np-danger"
+            : "border-np-verify/40 bg-emerald-950/50 text-np-verify"
         }`}>
           {actionNotice}
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-4">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 max-h-[820px] overflow-y-auto">
+        <div className="rounded-np-lg border border-np-border bg-np-surface max-h-[820px] overflow-y-auto">
           {items.map((item, index) => {
             const active = index === selectedIdx;
             const rowDraft = active ? draft : draftFrom(item);
@@ -440,14 +440,14 @@ export default function VerificationReviewPage() {
               <button
                 key={item.queue_id}
                 onClick={() => selectIndex(index)}
-                className={`w-full text-left px-3 py-3 border-b border-slate-800/80 ${
-                  active ? "bg-indigo-500/15" : "hover:bg-slate-800/50"
+                className={`w-full text-left px-3 py-3 border-b border-np-border ${
+                  active ? "bg-np-accent/15" : "hover:bg-np-surface-2"
                 }`}
               >
                 <div className="text-xs font-semibold text-white line-clamp-2">{rowDraft.title.trim() || "Untitled"}</div>
-                <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400">
+                <div className="mt-1 flex items-center justify-between text-[10px] text-np-muted">
                   <span>{rowConfidence == null ? "No score" : `${rowConfidence}%`}</span>
-                  <span className={rowReady ? "text-emerald-300" : "text-amber-300"}>
+                  <span className={rowReady ? "text-np-verify" : "text-np-warn"}>
                     {rowReady ? "Complete" : "Incomplete"}
                   </span>
                 </div>
@@ -457,45 +457,45 @@ export default function VerificationReviewPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-200">Why it is here</div>
-            <p className="mt-1 text-sm text-amber-50">{current.reason || "Needs a human check."}</p>
+          <div className="rounded-np-lg border border-np-warn/30 bg-np-warn/10 px-4 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-np-warn">Why it is here</div>
+            <p className="mt-1 text-sm text-np-text">{current.reason || "Needs a human check."}</p>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4 space-y-3">
+            <section className="rounded-np-lg border border-np-border bg-np-surface p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-300 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-indigo-400" />
+                <h2 className="text-xs font-bold uppercase tracking-wide text-np-muted flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-np-accent" />
                   Source text
                 </h2>
                 {raw.canonical_url && (
-                  <a href={raw.canonical_url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-indigo-300 inline-flex items-center gap-1">
+                  <a href={raw.canonical_url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-np-accent inline-flex items-center gap-1">
                     Open source <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
               </div>
-              <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs leading-relaxed text-slate-200 whitespace-pre-wrap">
+              <div className="max-h-72 overflow-y-auto rounded-xl border border-np-border bg-np-bg p-3 text-xs leading-relaxed text-np-text whitespace-pre-wrap">
                 {sourceText}
               </div>
-              <p className="text-[10px] text-slate-500">Source text stays as crawled. Edits go on the event, then you publish.</p>
+              <p className="text-[10px] text-np-faint">Source text stays as crawled. Edits go on the event, then you publish.</p>
 
               <div className="pt-2 space-y-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-wide text-slate-300 flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-indigo-400" />
+                  <h3 className="text-xs font-bold uppercase tracking-wide text-np-muted flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-np-accent" />
                     Event image
                   </h3>
-                  {flagged("flyer") && <span className="text-[10px] font-semibold text-amber-300">Check image</span>}
+                  {flagged("flyer") && <span className="text-[10px] font-semibold text-np-warn">Check image</span>}
                 </div>
                 {preview ? (
-                  <img src={preview} alt="" className="max-h-48 w-full rounded-xl border border-slate-800 object-contain bg-slate-950" />
+                  <img src={preview} alt="" className="max-h-48 w-full rounded-xl border border-np-border object-contain bg-np-bg" />
                 ) : (
-                  <div className="rounded-xl border border-dashed border-slate-700 bg-slate-950 px-3 py-8 text-center text-[11px] text-slate-500">
+                  <div className="rounded-xl border border-dashed border-np-border-strong bg-np-bg px-3 py-8 text-center text-[11px] text-np-faint">
                     No image yet. Add a poster or photo for this event.
                   </div>
                 )}
-                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-[11px] font-semibold text-slate-200">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-np-border-strong bg-np-bg px-3 py-2 text-[11px] font-semibold text-np-text">
                   {busyAction === "flyer" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
                   {busyAction === "flyer" ? "Uploading…" : preview ? "Replace image" : "Add image"}
                   <input
@@ -510,14 +510,14 @@ export default function VerificationReviewPage() {
                     }}
                   />
                 </label>
-                <p className="text-[10px] text-slate-500">JPEG, PNG, or WebP, up to 5 MB. The image is stored as soon as you choose it.</p>
+                <p className="text-[10px] text-np-faint">JPEG, PNG, or WebP, up to 5 MB. The image is stored as soon as you choose it.</p>
               </div>
             </section>
 
-            <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4 space-y-3">
+            <section className="rounded-np-lg border border-np-border bg-np-surface p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-300">Event details</h2>
-                <span className="text-[11px] font-mono text-slate-300">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-np-muted">Event details</h2>
+                <span className="text-[11px] font-mono text-np-muted">
                   {confidence == null ? "Confidence unknown" : `${confidence}% confidence`}
                 </span>
               </div>
@@ -633,12 +633,12 @@ export default function VerificationReviewPage() {
                   />
                 </div>
               </div>
-              <label className="flex items-center gap-2 text-[11px] text-slate-300">
+              <label className="flex items-center gap-2 text-[11px] text-np-muted">
                 <input
                   type="checkbox"
                   checked={draft.is_online}
                   onChange={(event) => patchDraft({ is_online: event.target.checked })}
-                  className="accent-indigo-500"
+                  className="accent-np-accent"
                 />
                 Online event
               </label>
@@ -668,15 +668,15 @@ export default function VerificationReviewPage() {
             </section>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-xs text-slate-400">
+          <div className="rounded-np-lg border border-np-border bg-np-surface px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs text-np-muted">
               Item {selectedIdx + 1} of {items.length}
               <div className="mt-1 flex gap-2">
                 <button
                   type="button"
                   disabled={selectedIdx === 0}
                   onClick={() => selectIndex(selectedIdx - 1)}
-                  className="text-[11px] text-slate-300 disabled:opacity-40"
+                  className="text-[11px] text-np-muted disabled:opacity-40"
                 >
                   Previous
                 </button>
@@ -684,7 +684,7 @@ export default function VerificationReviewPage() {
                   type="button"
                   disabled={selectedIdx >= items.length - 1}
                   onClick={() => selectIndex(selectedIdx + 1)}
-                  className="text-[11px] text-slate-300 disabled:opacity-40"
+                  className="text-[11px] text-np-muted disabled:opacity-40"
                 >
                   Next
                 </button>
@@ -695,7 +695,7 @@ export default function VerificationReviewPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={Boolean(busyAction) || !dirty}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-xs font-semibold text-slate-100 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-np-border-strong bg-np-bg px-4 py-2 text-xs font-semibold text-np-text disabled:opacity-60"
               >
                 {busyAction === "save" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 {busyAction === "save" ? "Saving…" : "Save details"}
@@ -704,7 +704,7 @@ export default function VerificationReviewPage() {
                 type="button"
                 onClick={() => handleAction("reject")}
                 disabled={Boolean(busyAction)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/40 bg-rose-950/70 px-4 py-2 text-xs font-semibold text-rose-100 disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-np-danger/40 bg-np-danger/15 px-4 py-2 text-xs font-semibold text-np-danger disabled:opacity-60"
               >
                 {busyAction === "reject" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
                 {busyAction === "reject" ? "Rejecting…" : "Reject"}
@@ -713,7 +713,7 @@ export default function VerificationReviewPage() {
                 type="button"
                 onClick={() => handleAction("approve")}
                 disabled={Boolean(busyAction)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-np-verify px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
               >
                 {busyAction === "approve" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                 {busyAction === "approve" ? "Publishing…" : "Approve & publish"}
