@@ -92,7 +92,6 @@ export default async function HomePage() {
             items={[
               {
                 value: stats.sources_monitored ?? 0,
-                suffix: "+",
                 label: "Sources monitored",
                 colorClass: "text-np-text",
               },
@@ -107,9 +106,8 @@ export default async function HomePage() {
                 colorClass: "text-np-accent",
               },
               {
-                value: 100,
-                suffix: "%",
-                label: "Source-backed listings",
+                value: stats.organizations_listed ?? stats.source_links ?? 0,
+                label: "Organizations listed",
                 colorClass: "text-np-online",
               },
             ]}

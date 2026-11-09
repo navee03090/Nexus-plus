@@ -231,25 +231,59 @@ const EMPTY_ADMIN_STATS = {
   opportunities_published: 0,
   pending_verification: 0,
   duplicates_resolved: 0,
+  organizations_listed: 0,
+  source_links: 0,
   ai_extraction_success_rate: 0,
   auto_crawl: false,
   system_health: "Degraded",
 };
 
 export async function fetchAdminStats() {
+  // Prefer API first — Supabase anon RLS hides `sources`, which made the homepage show 0.
+  try {
+    const res = await fetchWithTimeout(`${getBase()}/admin/stats`, { cache: "no-store" }, 8000);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data) {
+        const data = json.data;
+        // Enrich with public Supabase counts when API omits them
+        try {
+          const sb = await fetchStatsFromSupabase();
+          if (sb) {
+            return {
+              ...data,
+              organizations_listed: sb.organizations_listed ?? data.organizations_listed ?? 0,
+              source_links: sb.source_links ?? data.source_links ?? 0,
+              sources_monitored:
+                data.sources_monitored > 0
+                  ? data.sources_monitored
+                  : sb.sources_monitored || 0,
+              duplicates_resolved:
+                data.duplicates_resolved > 0
+                  ? data.duplicates_resolved
+                  : sb.duplicates_resolved || 0,
+              opportunities_published:
+                data.opportunities_published > 0
+                  ? data.opportunities_published
+                  : sb.opportunities_published || 0,
+            };
+          }
+        } catch {
+          // keep API payload
+        }
+        return data;
+      }
+    }
+  } catch {
+    // Fall through to Supabase
+  }
+
   try {
     const live = await fetchStatsFromSupabase();
     if (live) return live;
   } catch {
-    // Render is the next fallback
+    // Graceful empty fallback
   }
-  try {
-    const res = await fetchWithTimeout(`${getBase()}/admin/stats`, { cache: "no-store" });
-    if (res.ok) {
-      const json = await res.json();
-      return json.data;
-    }
-  } catch {}
   return { ...EMPTY_ADMIN_STATS };
 }
 

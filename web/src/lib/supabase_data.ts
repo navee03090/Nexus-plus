@@ -310,20 +310,30 @@ export async function fetchCategoriesFromSupabase(): Promise<Category[]> {
 
 export async function fetchStatsFromSupabase() {
   try {
-    const [published, allOpps, sources, pending] = await Promise.all([
-      restCount("opportunities", "status=in.(published,updated)"),
-      restCount("opportunities"),
-      restCount("sources"),
-      restCount("verification_queue", "status=eq.pending"),
-    ]);
+    const [published, allOpps, sources, pending, organizations, linkedSources] =
+      await Promise.all([
+        restCount("opportunities", "status=in.(published,updated)"),
+        restCount("opportunities"),
+        restCount("sources"),
+        restCount("verification_queue", "status=eq.pending"),
+        restCount("organizations"),
+        restCount("opportunity_sources"),
+      ]);
+
+    // `sources` is admin-RLS locked for anon; fall back to organizations for public UI.
+    const sourcesMonitored = sources > 0 ? sources : organizations;
+    const duplicatesResolved = Math.max(0, linkedSources - allOpps);
+
     return {
-      sources_monitored: sources,
-      active_sources: sources,
+      sources_monitored: sourcesMonitored,
+      active_sources: sourcesMonitored,
       failed_sources: 0,
       opportunities_discovered: allOpps,
       opportunities_published: published,
       pending_verification: pending,
-      duplicates_resolved: 0,
+      duplicates_resolved: duplicatesResolved,
+      organizations_listed: organizations,
+      source_links: linkedSources,
       ai_extraction_success_rate: 0,
       auto_crawl: false,
       system_health: "Healthy",
