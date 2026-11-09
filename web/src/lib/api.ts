@@ -283,6 +283,28 @@ export interface ReviewCorrection {
   registration_url?: string;
   eligibility_summary?: string;
   contact_email?: string;
+  featured?: boolean;
+  admin_note?: string;
+}
+
+export type OpportunityCorrection = ReviewCorrection;
+
+export interface AdminOpportunityListParams {
+  q?: string;
+  status?: string;
+  category?: string;
+  sort?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AdminOpportunityListResult {
+  items: Opportunity[];
+  total: number;
+  live_count: number;
+  limit: number;
+  offset: number;
+  error?: string;
 }
 
 export interface ReviewWriteResult {
@@ -377,6 +399,131 @@ export async function rejectVerificationItem(queueId: string, reason?: string): 
     return { success: false };
   } catch {
     return { success: false };
+  }
+}
+
+export async function fetchAdminOpportunities(
+  params: AdminOpportunityListParams = {}
+): Promise<AdminOpportunityListResult> {
+  const qs = new URLSearchParams();
+  if (params.q) qs.set("q", params.q);
+  if (params.status) qs.set("status", params.status);
+  if (params.category) qs.set("category", params.category);
+  if (params.sort) qs.set("sort", params.sort);
+  if (params.limit != null) qs.set("limit", String(params.limit));
+  if (params.offset != null) qs.set("offset", String(params.offset));
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  try {
+    const res = await fetchWithTimeout(`${getBase()}/admin/opportunities${suffix}`, { cache: "no-store" }, 12000);
+    if (!res.ok) {
+      return { items: [], total: 0, live_count: 0, limit: 40, offset: 0, error: `Catalog API returned ${res.status}` };
+    }
+    const json = await res.json();
+    const data = json.data || {};
+    return {
+      items: data.items || [],
+      total: data.total || 0,
+      live_count: data.live_count || 0,
+      limit: data.limit || params.limit || 40,
+      offset: data.offset || params.offset || 0,
+    };
+  } catch {
+    return { items: [], total: 0, live_count: 0, limit: 40, offset: 0, error: "Could not reach the catalog API" };
+  }
+}
+
+export async function saveAdminOpportunity(
+  opportunityId: string,
+  corrections: OpportunityCorrection
+): Promise<ReviewWriteResult> {
+  try {
+    const res = await fetch(`${getBase()}/admin/opportunities/${opportunityId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(corrections),
+    });
+    if (!res.ok) return readReviewError(res);
+    const json = await res.json();
+    return { success: true, opportunity: json.data?.opportunity };
+  } catch {
+    return { success: false, error: "Could not reach the catalog API." };
+  }
+}
+
+export async function uploadAdminOpportunityFlyer(
+  opportunityId: string,
+  file: File
+): Promise<ReviewWriteResult> {
+  try {
+    const body = new FormData();
+    body.append("flyer_file", file);
+    const res = await fetch(`${getBase()}/admin/opportunities/${opportunityId}/flyer`, {
+      method: "POST",
+      body,
+    });
+    if (!res.ok) return readReviewError(res);
+    const json = await res.json();
+    return { success: true, flyer_url: json.data?.flyer_url };
+  } catch {
+    return { success: false, error: "Could not upload the image." };
+  }
+}
+
+export async function unpublishAdminOpportunity(opportunityId: string): Promise<ReviewWriteResult> {
+  try {
+    const res = await fetch(`${getBase()}/admin/opportunities/${opportunityId}/unpublish`, { method: "POST" });
+    if (!res.ok) return readReviewError(res);
+    const json = await res.json();
+    return { success: true, opportunity: json.data?.opportunity };
+  } catch {
+    return { success: false, error: "Could not unpublish this opportunity." };
+  }
+}
+
+export async function rejectAdminOpportunity(
+  opportunityId: string,
+  reason?: string
+): Promise<ReviewWriteResult> {
+  try {
+    const res = await fetch(`${getBase()}/admin/opportunities/${opportunityId}/reject`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: reason || "Rejected by admin" }),
+    });
+    if (!res.ok) return readReviewError(res);
+    const json = await res.json();
+    return { success: true, opportunity: json.data?.opportunity };
+  } catch {
+    return { success: false, error: "Could not delete this opportunity." };
+  }
+}
+
+export async function expireAdminOpportunity(opportunityId: string): Promise<ReviewWriteResult> {
+  try {
+    const res = await fetch(`${getBase()}/admin/opportunities/${opportunityId}/expire`, { method: "POST" });
+    if (!res.ok) return readReviewError(res);
+    const json = await res.json();
+    return { success: true, opportunity: json.data?.opportunity };
+  } catch {
+    return { success: false, error: "Could not expire this opportunity." };
+  }
+}
+
+export async function publishAdminOpportunity(
+  opportunityId: string,
+  corrections?: OpportunityCorrection
+): Promise<ReviewWriteResult> {
+  try {
+    const res = await fetch(`${getBase()}/admin/opportunities/${opportunityId}/publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(corrections || {}),
+    });
+    if (!res.ok) return readReviewError(res);
+    const json = await res.json();
+    return { success: true, opportunity: json.data?.opportunity };
+  } catch {
+    return { success: false, error: "Could not publish this opportunity." };
   }
 }
 

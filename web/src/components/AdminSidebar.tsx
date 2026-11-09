@@ -11,7 +11,8 @@ import {
   FileText, 
   ExternalLink,
   Activity,
-  UploadCloud
+  UploadCloud,
+  Sparkles
 } from "lucide-react";
 
 export const AdminSidebar: React.FC = () => {
@@ -21,6 +22,7 @@ export const AdminSidebar: React.FC = () => {
     { name: "Overview", href: "/admin", icon: LayoutDashboard },
     { name: "Curator Drop Station", href: "/admin/ingest", icon: UploadCloud, badge: "Phase 1" },
     { name: "Verification Queue", href: "/admin/review", icon: ShieldCheck, badge: "Pending" },
+    { name: "Published Opportunities", href: "/admin/opportunities", icon: Sparkles },
     { name: "Monitored Sources", href: "/admin/sources", icon: Radio },
     { name: "Ingestion Runs", href: "/admin/ingestion", icon: Database },
     { name: "Audit & Logs", href: "/admin/settings", icon: FileText },
@@ -37,7 +39,9 @@ export const AdminSidebar: React.FC = () => {
           <nav className="mt-2 space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const active = pathname === item.href;
+              const active = item.href === "/admin"
+                ? pathname === "/admin"
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
                 <Link
                   key={item.name}

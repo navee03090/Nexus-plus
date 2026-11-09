@@ -48,7 +48,14 @@ export default async function AdminDashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap justify-end">
+          <Link
+            href="/admin/opportunities"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-100 text-xs font-semibold transition-colors"
+          >
+            <Sparkles className="w-4 h-4 text-indigo-300" />
+            <span>Published catalog</span>
+          </Link>
           <Link
             href="/admin/review"
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-lg shadow-indigo-600/30"
@@ -74,7 +81,7 @@ export default async function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+        <Link href="/admin/opportunities" className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 block hover:border-indigo-500/40 transition-colors">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span>Canonical Opportunities</span>
             <Sparkles className="w-4 h-4 text-indigo-400" />
@@ -83,9 +90,9 @@ export default async function AdminDashboardPage() {
             {stats.opportunities_published}
           </div>
           <div className="text-[11px] text-slate-400">
-            {stats.opportunities_discovered} total rows
+            {stats.opportunities_discovered} total rows · manage live catalog
           </div>
-        </div>
+        </Link>
 
         <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-400">

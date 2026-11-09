@@ -1,18 +1,15 @@
 """
 Admin Control Plane Endpoints (Section 37, 56, 57, 58, 59, 60, 63, 84).
-Provides verification queue, source administration, live ingestion monitoring,
-system diagnostics, safe source testing, and administrative audit logging.
+Provides verification queue, published opportunity catalog, source administration,
+live ingestion monitoring, system diagnostics, safe source testing, and audit logging.
 """
-import re
 import time
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_, text
 from sqlalchemy.orm import selectinload
-import dateutil.parser
 import uuid
 
 def is_valid_uuid(val: Any) -> bool:
@@ -43,145 +40,27 @@ from app.core.config import settings
 from app.core.security import require_admin
 from app.models.opportunity import Opportunity, OpportunitySource
 from app.models.category import Category
-from app.models.organization import Organization
 from app.models.source import Source
 from app.models.source_item import SourceItem
 from app.models.audit import VerificationQueue, AuditLog, IngestionRun
 from app.services.ingestion import get_adapter_for_source
-from app.services.opportunities.resolver import slugify
-from app.services.storage import store_flyer_image
+from app.services.opportunities.admin_editor import (
+    LIVE_STATUSES,
+    ReviewCorrection,
+    OpportunityCorrection,
+    apply_corrections,
+    attach_flyer,
+    load_opportunity,
+    opportunity_payload,
+    publish_problems,
+    reject_fields,
+    reload_opportunity,
+    snapshot,
+    write_audit,
+)
 from app.schemas.source import SourceCreate, SourceTestRequest
 
 router = APIRouter(prefix="/admin", tags=["Admin Control Plane"])
-
-WEAK_TITLE = re.compile(r"notice board|untitled", re.IGNORECASE)
-FLYER_MAX_BYTES = 5 * 1024 * 1024
-
-
-class ReviewCorrection(BaseModel):
-    title: Optional[str] = None
-    summary: Optional[str] = None
-    description: Optional[str] = None
-    category_name: Optional[str] = None
-    organization_name: Optional[str] = None
-    city: Optional[str] = None
-    venue: Optional[str] = None
-    is_online: Optional[bool] = None
-    start_date: Optional[str] = None
-    registration_deadline: Optional[str] = None
-    registration_url: Optional[str] = None
-    eligibility_summary: Optional[str] = None
-    contact_email: Optional[str] = None
-
-
-def _reject_fields(message: str, fields: list[str], opportunity: Optional[dict] = None) -> None:
-    detail: Dict[str, Any] = {"message": message, "fields": fields}
-    if opportunity is not None:
-        detail["opportunity"] = opportunity
-    raise HTTPException(status_code=422, detail=detail)
-
-
-def _blank(value: Optional[str]) -> Optional[str]:
-    if value is None:
-        return None
-    text = str(value).strip()
-    return text or None
-
-
-def _parse_optional_dt(value: Optional[str], field: str) -> Optional[datetime]:
-    text = _blank(value)
-    if not text:
-        return None
-    try:
-        parsed = dateutil.parser.parse(text)
-    except (ValueError, TypeError, OverflowError):
-        _reject_fields("Use a real date.", [field])
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed
-
-
-def _iso(value: Optional[datetime]) -> Optional[str]:
-    return value.isoformat() if value else None
-
-
-def _snapshot(opp: Opportunity) -> Dict[str, Any]:
-    return {
-        "title": opp.title,
-        "summary": opp.summary,
-        "description": opp.description,
-        "category_name": opp.category.name if opp.category else None,
-        "organization_name": opp.organization.name if opp.organization else None,
-        "city": opp.city,
-        "venue": opp.venue,
-        "is_online": bool(opp.is_online),
-        "start_date": _iso(opp.start_date),
-        "registration_deadline": _iso(opp.registration_deadline),
-        "registration_url": opp.registration_url,
-        "eligibility_summary": opp.eligibility_summary,
-        "contact_email": opp.contact_email,
-        "flyer_url": opp.flyer_url,
-        "status": opp.status,
-        "verification_status": opp.verification_status,
-    }
-
-
-def _opportunity_payload(opp: Opportunity) -> Dict[str, Any]:
-    snap = _snapshot(opp)
-    snap["id"] = opp.id
-    snap["ai_confidence"] = opp.ai_confidence
-    snap["trust_score"] = opp.trust_score
-    return snap
-
-
-def _title_is_real(title: Optional[str]) -> bool:
-    text = (title or "").strip()
-    if len(text) < 8:
-        return False
-    if WEAK_TITLE.search(text):
-        return False
-    return True
-
-
-def _publish_problems(opp: Opportunity) -> list[str]:
-    fields: list[str] = []
-    if not _title_is_real(opp.title):
-        fields.append("title")
-    link = (opp.registration_url or opp.application_url or "").strip()
-    if not opp.registration_deadline and not link:
-        fields.extend(["registration_deadline", "registration_url"])
-    return fields
-
-
-def _image_extension(content_type: str, data: bytes) -> Optional[str]:
-    kind = None
-    if data.startswith(b"\xff\xd8\xff"):
-        kind = ".jpg"
-    elif data.startswith(b"\x89PNG\r\n\x1a\n"):
-        kind = ".png"
-    elif len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
-        kind = ".webp"
-    if not kind:
-        return None
-    allowed = {
-        ".jpg": {"image/jpeg", "image/jpg", "image/pjpeg"},
-        ".png": {"image/png"},
-        ".webp": {"image/webp"},
-    }
-    if content_type not in allowed[kind]:
-        return None
-    return kind
-
-
-async def _unique_slug(db: AsyncSession, title: str) -> str:
-    base = slugify(title)[:110]
-    for _ in range(5):
-        candidate = f"{base}-{uuid.uuid4().hex[:6]}"
-        exists = (await db.execute(select(Opportunity.id).where(Opportunity.slug == candidate))).scalar()
-        if not exists:
-            return candidate
-    return f"{base}-{uuid.uuid4().hex}"
 
 
 async def _load_pending_review(db: AsyncSession, queue_id: str):
@@ -192,153 +71,7 @@ async def _load_pending_review(db: AsyncSession, queue_id: str):
         raise HTTPException(status_code=404, detail="Queue item not found")
     if not q_item.opportunity_id or not is_valid_uuid(q_item.opportunity_id):
         raise HTTPException(status_code=404, detail="Opportunity not found")
-    stmt = (
-        select(Opportunity)
-        .where(Opportunity.id == q_item.opportunity_id)
-        .options(selectinload(Opportunity.organization), selectinload(Opportunity.category))
-    )
-    opp = (await db.execute(stmt)).scalar_one_or_none()
-    if not opp:
-        raise HTTPException(status_code=404, detail="Opportunity not found")
-    return q_item, opp
-
-
-async def _reload_opportunity(db: AsyncSession, opportunity_id: str) -> Opportunity:
-    stmt = (
-        select(Opportunity)
-        .where(Opportunity.id == opportunity_id)
-        .options(selectinload(Opportunity.organization), selectinload(Opportunity.category))
-    )
-    return (await db.execute(stmt)).scalar_one()
-
-
-async def _apply_corrections(db: AsyncSession, opp: Opportunity, payload: ReviewCorrection) -> Dict[str, Any]:
-    data = payload.model_dump(exclude_unset=True)
-    after = _snapshot(opp)
-    if not data:
-        return after
-
-    if "title" in data:
-        title = (data["title"] or "").strip()
-        if not title:
-            _reject_fields("Title cannot be empty.", ["title"])
-        if len(title) > 500:
-            _reject_fields("Title is too long.", ["title"])
-        if title != opp.title:
-            opp.slug = await _unique_slug(db, title)
-        opp.title = title
-        after["title"] = title
-
-    if "summary" in data:
-        summary = (data["summary"] or "").strip()
-        opp.summary = summary
-        after["summary"] = summary
-
-    if "description" in data:
-        description = (data["description"] or "").strip()
-        opp.description = description
-        after["description"] = description
-
-    if "category_name" in data:
-        name = _blank(data["category_name"])
-        if not name:
-            opp.category_id = None
-            after["category_name"] = None
-        else:
-            cat = (await db.execute(select(Category).where(Category.name.ilike(name)))).scalars().first()
-            if cat is None:
-                _reject_fields("Pick a category from the list.", ["category_name"])
-                return after
-            opp.category_id = cat.id
-            after["category_name"] = cat.name
-
-    if "organization_name" in data:
-        name = _blank(data["organization_name"])
-        if not name:
-            opp.organization_id = None
-            after["organization_name"] = None
-        else:
-            if len(name) > 255:
-                _reject_fields("Organization name is too long.", ["organization_name"])
-            org = (await db.execute(select(Organization).where(Organization.name.ilike(name)))).scalars().first()
-            if not org:
-                org = Organization(
-                    name=name,
-                    slug=f"{slugify(name)[:110]}-{uuid.uuid4().hex[:6]}",
-                    organization_type="Other",
-                )
-                db.add(org)
-                await db.flush()
-            opp.organization_id = org.id
-            after["organization_name"] = org.name
-
-    if "city" in data:
-        city = _blank(data["city"])
-        if city and len(city) > 100:
-            _reject_fields("City is too long.", ["city"])
-        opp.city = city
-        after["city"] = city
-
-    if "venue" in data:
-        venue = _blank(data["venue"])
-        if venue and len(venue) > 500:
-            _reject_fields("Venue is too long.", ["venue"])
-        opp.venue = venue
-        after["venue"] = venue
-
-    if "is_online" in data:
-        opp.is_online = bool(data["is_online"])
-        after["is_online"] = opp.is_online
-
-    if "start_date" in data:
-        opp.start_date = _parse_optional_dt(data["start_date"], "start_date")
-        after["start_date"] = _iso(opp.start_date)
-
-    if "registration_deadline" in data:
-        opp.registration_deadline = _parse_optional_dt(data["registration_deadline"], "registration_deadline")
-        after["registration_deadline"] = _iso(opp.registration_deadline)
-
-    if "registration_url" in data:
-        url = _blank(data["registration_url"])
-        if url and not url.lower().startswith(("http://", "https://")):
-            _reject_fields("Apply link must start with http:// or https://.", ["registration_url"])
-        if url and len(url) > 2048:
-            _reject_fields("Apply link is too long.", ["registration_url"])
-        opp.registration_url = url
-        after["registration_url"] = url
-
-    if "eligibility_summary" in data:
-        eligibility = _blank(data["eligibility_summary"])
-        opp.eligibility_summary = eligibility
-        after["eligibility_summary"] = eligibility
-
-    if "contact_email" in data:
-        email = _blank(data["contact_email"])
-        if email and ("@" not in email or len(email) > 255):
-            _reject_fields("Enter a valid contact email.", ["contact_email"])
-        opp.contact_email = email
-        after["contact_email"] = email
-
-    opp.updated_at = datetime.now(timezone.utc)
-    return after
-
-
-def _write_audit(
-    db: AsyncSession,
-    admin_id: Optional[str],
-    action: str,
-    entity_id: str,
-    before_state: Dict[str, Any],
-    after_state: Dict[str, Any],
-) -> None:
-    db.add(AuditLog(
-        admin_user_id=admin_id,
-        action=action,
-        entity_type="opportunity",
-        entity_id=str(entity_id),
-        before_state=before_state,
-        after_state=after_state,
-    ))
+    return q_item, await load_opportunity(db, q_item.opportunity_id)
 
 
 @router.get("/stats")
@@ -448,14 +181,14 @@ async def update_queue_item(
 ):
     """Save admin corrections while the item stays in the pending queue."""
     q_item, opp = await _load_pending_review(db, queue_id)
-    before = _snapshot(opp)
-    after = await _apply_corrections(db, opp, payload)
+    before = snapshot(opp)
+    after = await apply_corrections(db, opp, payload)
     q_admin_id = await get_valid_admin_user_id(db, admin_claims)
     if before != after:
-        _write_audit(db, q_admin_id, "EDIT_EVENT", opp.id, before, after)
+        write_audit(db, q_admin_id, "EDIT_EVENT", opp.id, before, after)
     await db.commit()
-    opp = await _reload_opportunity(db, opp.id)
-    return {"data": {"saved": True, "queue_id": q_item.id, "opportunity": _opportunity_payload(opp)}}
+    opp = await reload_opportunity(db, opp.id)
+    return {"data": {"saved": True, "queue_id": q_item.id, "opportunity": opportunity_payload(opp)}}
 
 
 @router.post("/review/{queue_id}/flyer")
@@ -469,19 +202,8 @@ async def upload_queue_flyer(
     q_item, opp = await _load_pending_review(db, queue_id)
     content_type = (flyer_file.content_type or "").split(";")[0].strip().lower()
     data = await flyer_file.read()
-    if len(data) > FLYER_MAX_BYTES:
-        _reject_fields("Image must be under 5 MB.", ["flyer"])
-    ext = _image_extension(content_type, data)
-    if not data or not ext:
-        _reject_fields("Use a JPEG, PNG, or WebP image.", ["flyer"])
-
-    before = _snapshot(opp)
-    opp.flyer_url = await store_flyer_image(data, content_type, ext, prefix="review")
-    opp.updated_at = datetime.now(timezone.utc)
-    after = _snapshot(opp)
-    after["flyer_url"] = opp.flyer_url
     q_admin_id = await get_valid_admin_user_id(db, admin_claims)
-    _write_audit(db, q_admin_id, "EDIT_EVENT", opp.id, before, after)
+    await attach_flyer(db, opp, data, content_type, q_admin_id, prefix="review")
     await db.commit()
     return {"data": {"flyer_url": opp.flyer_url, "queue_id": q_item.id, "opportunity_id": opp.id}}
 
@@ -495,23 +217,23 @@ async def approve_queue_item(
 ):
     """Apply the review form, then publish when the title and a deadline or apply link are real."""
     q_item, opp = await _load_pending_review(db, queue_id)
-    before = _snapshot(opp)
+    before = snapshot(opp)
     kept_confidence = opp.ai_confidence
     after = before
     if payload is not None:
-        after = await _apply_corrections(db, opp, payload)
+        after = await apply_corrections(db, opp, payload)
 
-    problems = _publish_problems(opp)
+    problems = publish_problems(opp)
     q_admin_id = await get_valid_admin_user_id(db, admin_claims)
     if problems:
         if before != after:
-            _write_audit(db, q_admin_id, "EDIT_EVENT", opp.id, before, after)
+            write_audit(db, q_admin_id, "EDIT_EVENT", opp.id, before, after)
             await db.commit()
-            opp = await _reload_opportunity(db, opp.id)
-        _reject_fields(
+            opp = await reload_opportunity(db, opp.id)
+        reject_fields(
             "Add a real title and a deadline or apply link before publishing.",
             problems,
-            _opportunity_payload(opp),
+            opportunity_payload(opp),
         )
 
     opp.status = "published"
@@ -527,10 +249,10 @@ async def approve_queue_item(
     published["status"] = "published"
     published["verification_status"] = "human_verified"
     published["flyer_url"] = opp.flyer_url
-    _write_audit(db, q_admin_id, "APPROVE_EVENT", opp.id, before, published)
+    write_audit(db, q_admin_id, "APPROVE_EVENT", opp.id, before, published)
     await db.commit()
-    opp = await _reload_opportunity(db, opp.id)
-    return {"data": {"approved": True, "opportunity_id": opp.id, "opportunity": _opportunity_payload(opp)}}
+    opp = await reload_opportunity(db, opp.id)
+    return {"data": {"approved": True, "opportunity_id": opp.id, "opportunity": opportunity_payload(opp)}}
 
 
 @router.post("/review/{queue_id}/reject")
@@ -572,6 +294,272 @@ async def reject_queue_item(
     db.add(audit)
     await db.commit()
     return {"data": {"rejected": True}}
+
+
+def _list_row(opp: Opportunity) -> Dict[str, Any]:
+    payload = opportunity_payload(opp)
+    payload["slug"] = opp.slug
+    payload["featured"] = bool(opp.featured)
+    payload["published_at"] = opp.published_at.isoformat() if opp.published_at else None
+    payload["updated_at"] = opp.updated_at.isoformat() if opp.updated_at else None
+    return payload
+
+
+@router.get("/opportunities")
+async def list_admin_opportunities(
+    q: Optional[str] = Query(None),
+    status: str = Query("live"),
+    category: Optional[str] = Query(None),
+    sort: str = Query("published_at"),
+    limit: int = Query(40, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+    admin_claims: Dict[str, Any] = Depends(require_admin),
+):
+    """Paginated catalog of opportunities for the admin Published tab."""
+    stmt = select(Opportunity).options(
+        selectinload(Opportunity.organization),
+        selectinload(Opportunity.category),
+    )
+    count_stmt = select(func.count(Opportunity.id))
+
+    status_key = (status or "live").strip().lower()
+    if status_key in ("live", "published"):
+        status_filter = Opportunity.status.in_(LIVE_STATUSES)
+    elif status_key == "unpublished":
+        status_filter = Opportunity.status == "pending_review"
+    elif status_key == "rejected":
+        status_filter = Opportunity.status == "rejected"
+    elif status_key == "expired":
+        status_filter = Opportunity.status == "expired"
+    elif status_key == "all":
+        status_filter = None
+    else:
+        status_filter = Opportunity.status == status_key
+
+    if status_filter is not None:
+        stmt = stmt.where(status_filter)
+        count_stmt = count_stmt.where(status_filter)
+
+    needle = (q or "").strip()
+    if needle:
+        like = f"%{needle}%"
+        search_filter = or_(
+            Opportunity.title.ilike(like),
+            Opportunity.summary.ilike(like),
+            Opportunity.city.ilike(like),
+            Opportunity.registration_url.ilike(like),
+        )
+        stmt = stmt.where(search_filter)
+        count_stmt = count_stmt.where(search_filter)
+
+    cat_name = (category or "").strip()
+    if cat_name:
+        stmt = stmt.join(Category, Opportunity.category_id == Category.id).where(Category.name.ilike(cat_name))
+        count_stmt = count_stmt.join(Category, Opportunity.category_id == Category.id).where(Category.name.ilike(cat_name))
+
+    sort_key = (sort or "published_at").strip().lower()
+    if sort_key == "updated_at":
+        order_col = Opportunity.updated_at
+    elif sort_key in ("deadline", "registration_deadline"):
+        order_col = Opportunity.registration_deadline
+    elif sort_key == "title":
+        order_col = Opportunity.title
+    else:
+        order_col = Opportunity.published_at
+
+    total = (await db.execute(count_stmt)).scalar() or 0
+    live_count = (
+        await db.execute(
+            select(func.count(Opportunity.id)).where(Opportunity.status.in_(LIVE_STATUSES))
+        )
+    ).scalar() or 0
+
+    rows = (
+        await db.execute(
+            stmt.order_by(desc(order_col).nullslast(), desc(Opportunity.updated_at)).offset(offset).limit(limit)
+        )
+    ).scalars().all()
+
+    return {
+        "data": {
+            "items": [_list_row(opp) for opp in rows],
+            "total": total,
+            "live_count": live_count,
+            "limit": limit,
+            "offset": offset,
+        }
+    }
+
+
+@router.get("/opportunities/{opportunity_id}")
+async def get_admin_opportunity(
+    opportunity_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin_claims: Dict[str, Any] = Depends(require_admin),
+):
+    """Full editable opportunity plus linked source evidence when available."""
+    opp = await load_opportunity(db, opportunity_id)
+    source_evidence = None
+    src_stmt = (
+        select(OpportunitySource, SourceItem)
+        .outerjoin(SourceItem, OpportunitySource.source_item_id == SourceItem.id)
+        .where(OpportunitySource.opportunity_id == opp.id)
+        .order_by(desc(OpportunitySource.is_primary_source), desc(OpportunitySource.created_at))
+        .limit(1)
+    )
+    pair = (await db.execute(src_stmt)).first()
+    if pair:
+        link, s_item = pair
+        if s_item:
+            source_evidence = {
+                "source_item_id": s_item.id,
+                "title_raw": s_item.title_raw,
+                "body_raw": s_item.body_raw,
+                "canonical_url": s_item.canonical_url,
+                "published_at": s_item.published_at,
+                "relationship_type": link.relationship_type,
+            }
+    return {"data": {"opportunity": _list_row(opp), "source_evidence": source_evidence}}
+
+
+@router.patch("/opportunities/{opportunity_id}")
+async def update_admin_opportunity(
+    opportunity_id: str,
+    payload: OpportunityCorrection,
+    db: AsyncSession = Depends(get_db),
+    admin_claims: Dict[str, Any] = Depends(require_admin),
+):
+    """Edit a live or unpublished opportunity; public listings update immediately."""
+    opp = await load_opportunity(db, opportunity_id)
+    before = snapshot(opp)
+    after = await apply_corrections(db, opp, payload)
+    admin_id = await get_valid_admin_user_id(db, admin_claims)
+    if before != after:
+        write_audit(db, admin_id, "EDIT_EVENT", opp.id, before, after)
+    await db.commit()
+    opp = await reload_opportunity(db, opp.id)
+    return {"data": {"saved": True, "opportunity": _list_row(opp)}}
+
+
+@router.post("/opportunities/{opportunity_id}/flyer")
+async def upload_admin_opportunity_flyer(
+    opportunity_id: str,
+    flyer_file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    admin_claims: Dict[str, Any] = Depends(require_admin),
+):
+    """Attach or replace the flyer for a catalog opportunity."""
+    opp = await load_opportunity(db, opportunity_id)
+    content_type = (flyer_file.content_type or "").split(";")[0].strip().lower()
+    data = await flyer_file.read()
+    admin_id = await get_valid_admin_user_id(db, admin_claims)
+    await attach_flyer(db, opp, data, content_type, admin_id, prefix="catalog")
+    await db.commit()
+    return {"data": {"flyer_url": opp.flyer_url, "opportunity_id": opp.id}}
+
+
+@router.post("/opportunities/{opportunity_id}/unpublish")
+async def unpublish_admin_opportunity(
+    opportunity_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin_claims: Dict[str, Any] = Depends(require_admin),
+):
+    """Hide from the public portal while keeping the row for later republish."""
+    opp = await load_opportunity(db, opportunity_id)
+    before = snapshot(opp)
+    opp.status = "pending_review"
+    opp.updated_at = datetime.now(timezone.utc)
+    after = snapshot(opp)
+    admin_id = await get_valid_admin_user_id(db, admin_claims)
+    write_audit(db, admin_id, "UNPUBLISH_EVENT", opp.id, before, after)
+    await db.commit()
+    opp = await reload_opportunity(db, opp.id)
+    return {"data": {"unpublished": True, "opportunity": _list_row(opp)}}
+
+
+@router.post("/opportunities/{opportunity_id}/reject")
+async def reject_admin_opportunity(
+    opportunity_id: str,
+    payload: Optional[Dict[str, str]] = None,
+    db: AsyncSession = Depends(get_db),
+    admin_claims: Dict[str, Any] = Depends(require_admin),
+):
+    """Soft-delete: leave the public site and mark rejected."""
+    opp = await load_opportunity(db, opportunity_id)
+    before = snapshot(opp)
+    opp.status = "rejected"
+    opp.verification_status = "rejected"
+    opp.featured = False
+    opp.updated_at = datetime.now(timezone.utc)
+    after = snapshot(opp)
+    if payload and payload.get("reason"):
+        after["admin_note"] = payload["reason"]
+    admin_id = await get_valid_admin_user_id(db, admin_claims)
+    write_audit(db, admin_id, "REJECT_EVENT", opp.id, before, after)
+    await db.commit()
+    opp = await reload_opportunity(db, opp.id)
+    return {"data": {"rejected": True, "opportunity": _list_row(opp)}}
+
+
+@router.post("/opportunities/{opportunity_id}/expire")
+async def expire_admin_opportunity(
+    opportunity_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin_claims: Dict[str, Any] = Depends(require_admin),
+):
+    """Mark a past opportunity as expired so it leaves live listings."""
+    opp = await load_opportunity(db, opportunity_id)
+    before = snapshot(opp)
+    opp.status = "expired"
+    opp.featured = False
+    opp.updated_at = datetime.now(timezone.utc)
+    after = snapshot(opp)
+    admin_id = await get_valid_admin_user_id(db, admin_claims)
+    write_audit(db, admin_id, "EXPIRE_EVENT", opp.id, before, after)
+    await db.commit()
+    opp = await reload_opportunity(db, opp.id)
+    return {"data": {"expired": True, "opportunity": _list_row(opp)}}
+
+
+@router.post("/opportunities/{opportunity_id}/publish")
+async def publish_admin_opportunity(
+    opportunity_id: str,
+    payload: Optional[OpportunityCorrection] = None,
+    db: AsyncSession = Depends(get_db),
+    admin_claims: Dict[str, Any] = Depends(require_admin),
+):
+    """Republish an unpublished or updated opportunity when publish rules pass."""
+    opp = await load_opportunity(db, opportunity_id)
+    before = snapshot(opp)
+    after = before
+    if payload is not None:
+        after = await apply_corrections(db, opp, payload)
+
+    problems = publish_problems(opp)
+    admin_id = await get_valid_admin_user_id(db, admin_claims)
+    if problems:
+        if before != after:
+            write_audit(db, admin_id, "EDIT_EVENT", opp.id, before, after)
+            await db.commit()
+            opp = await reload_opportunity(db, opp.id)
+        reject_fields(
+            "Add a real title and a deadline or apply link before publishing.",
+            problems,
+            opportunity_payload(opp),
+        )
+
+    opp.status = "published"
+    opp.verification_status = "human_verified"
+    opp.published_at = opp.published_at or datetime.now(timezone.utc)
+    opp.updated_at = datetime.now(timezone.utc)
+    published = dict(after)
+    published["status"] = "published"
+    published["verification_status"] = "human_verified"
+    write_audit(db, admin_id, "PUBLISH_EVENT", opp.id, before, published)
+    await db.commit()
+    opp = await reload_opportunity(db, opp.id)
+    return {"data": {"published": True, "opportunity": _list_row(opp)}}
 
 
 def _serialize_source(s: Source) -> Dict[str, Any]:
