@@ -2,7 +2,6 @@ import React from "react";
 import Link from "next/link";
 import { 
   Search, 
-  Sparkles, 
   ArrowRight, 
   ShieldCheck, 
   Layers, 
@@ -12,7 +11,7 @@ import {
   Cpu, 
   Flame, 
   CheckCircle2, 
-  Bell, 
+  Compass, 
   FileCheck
 } from "lucide-react";
 import { OpportunityCard } from "@/components/OpportunityCard";
@@ -91,17 +90,17 @@ export default async function HomePage() {
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/opportunities"
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs sm:text-sm font-semibold border border-slate-700 transition-colors"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold transition-colors shadow-lg shadow-indigo-600/20"
             >
               <span>Browse All Directory</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
-              href="/for-you"
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs sm:text-sm font-semibold border border-indigo-500/40 transition-colors"
+              href="/admin"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-semibold border border-slate-700 transition-colors"
             >
-              <Sparkles className="w-4 h-4 text-indigo-400" />
-              <span>Personalized For You</span>
+              <FileCheck className="w-4 h-4 text-indigo-400" />
+              <span>Admin Review</span>
             </Link>
           </div>
         </div>
@@ -286,11 +285,11 @@ export default async function HomePage() {
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Link
-                href="/alerts"
+                href="/opportunities"
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm transition-colors shadow-lg shadow-emerald-600/20"
               >
-                <Bell className="w-4 h-4" />
-                <span>Configure Telegram & Email Alerts</span>
+                <Compass className="w-4 h-4" />
+                <span>Browse Opportunities</span>
               </Link>
               <Link
                 href="/admin"

@@ -5,14 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
   Compass, 
-  Sparkles, 
-  Bookmark, 
-  Bell, 
   ShieldCheck, 
   Menu, 
   X, 
   Search,
-  User,
   Radio
 } from "lucide-react";
 
@@ -20,11 +16,9 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  const navLinks = [
+  // Account tabs (For You / Saved / Alerts / Profile) stay hidden until login ships.
+  const navLinks: { name: string; href: string; icon: typeof Compass; badge?: string }[] = [
     { name: "Explore", href: "/opportunities", icon: Compass },
-    { name: "For You", href: "/for-you", icon: Sparkles, badge: "AI" },
-    { name: "Saved", href: "/saved", icon: Bookmark },
-    { name: "Alerts", href: "/alerts", icon: Bell },
     { name: "Admin Review", href: "/admin", icon: ShieldCheck },
   ];
 
@@ -101,14 +95,6 @@ export const Navbar: React.FC = () => {
               aria-label="Search opportunities"
             >
               <Search className="w-4 h-4" />
-            </Link>
-
-            <Link
-              href="/profile"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-medium text-slate-300 hover:text-white transition-colors"
-            >
-              <User className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden sm:inline">Profile</span>
             </Link>
 
             {/* Mobile Menu Toggle Button */}

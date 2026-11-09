@@ -52,11 +52,6 @@ export const Footer: React.FC = () => {
                   Startup Incubation & Cohorts
                 </Link>
               </li>
-              <li>
-                <Link href="/for-you" className="hover:text-indigo-400 transition-colors">
-                  Personalized Recommendations
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -82,11 +77,6 @@ export const Footer: React.FC = () => {
                 <Link href="/admin/ingestion" className="hover:text-indigo-400 transition-colors flex items-center gap-1.5">
                   <Database className="w-3.5 h-3.5 text-cyan-400" />
                   <span>Ingestion Health</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/alerts" className="hover:text-indigo-400 transition-colors">
-                  Alert Channels & Telegram Bot
                 </Link>
               </li>
             </ul>
