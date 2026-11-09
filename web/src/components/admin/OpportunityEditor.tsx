@@ -53,14 +53,49 @@ export function toDateInput(value?: string | null) {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
+export const WORD_LIMITS = {
+  title: 25,
+  summary: 60,
+  description: 500,
+  eligibility_summary: 120,
+  admin_note: 80,
+} as const;
+
+export function wordCount(value?: string | null) {
+  const text = (value || "").trim();
+  if (!text) return 0;
+  return text.split(/\s+/).filter(Boolean).length;
+}
+
+export function overWordLimit(field: keyof typeof WORD_LIMITS, value?: string | null) {
+  return wordCount(value) > WORD_LIMITS[field];
+}
+
 export function titleIsReal(title: string) {
   const text = title.trim();
-  return text.length >= 8 && !/notice board|untitled/i.test(text);
+  return text.length >= 8 && !/notice board|untitled/i.test(text) && !overWordLimit("title", text);
 }
 
 export function draftIsReady(draft: OpportunityDraft) {
   const hasCore = Boolean(draft.registration_deadline) || Boolean(draft.registration_url.trim());
-  return titleIsReal(draft.title) && hasCore;
+  const withinWords =
+    !overWordLimit("title", draft.title) &&
+    !overWordLimit("summary", draft.summary) &&
+    !overWordLimit("description", draft.description) &&
+    !overWordLimit("eligibility_summary", draft.eligibility_summary) &&
+    !overWordLimit("admin_note", draft.admin_note);
+  return titleIsReal(draft.title) && hasCore && withinWords;
+}
+
+export function wordLimitErrors(draft: OpportunityDraft): string[] {
+  const fields: Array<keyof typeof WORD_LIMITS> = [
+    "title",
+    "summary",
+    "description",
+    "eligibility_summary",
+    "admin_note",
+  ];
+  return fields.filter((field) => overWordLimit(field, draft[field]));
 }
 
 export function correctionsFromDraft(draft: OpportunityDraft) {
@@ -88,11 +123,30 @@ const inputClass = (flagged: boolean) =>
     flagged ? "border-amber-500/50 bg-amber-500/10" : "border-slate-800 bg-slate-950"
   }`;
 
-function Label({ text, missing }: { text: string; missing?: boolean }) {
+function Label({
+  text,
+  missing,
+  words,
+  limit,
+}: {
+  text: string;
+  missing?: boolean;
+  words?: number;
+  limit?: number;
+}) {
+  const over = limit != null && words != null && words > limit;
   return (
-    <div className="mb-1 flex items-center justify-between">
+    <div className="mb-1 flex items-center justify-between gap-2">
       <span className="text-[11px] font-semibold text-slate-400">{text}</span>
-      {missing && <span className="text-[10px] font-semibold text-amber-300">Missing</span>}
+      <div className="flex items-center gap-2">
+        {limit != null && words != null && (
+          <span className={`text-[10px] font-mono ${over ? "text-amber-300 font-semibold" : "text-slate-500"}`}>
+            {words}/{limit} words
+          </span>
+        )}
+        {missing && <span className="text-[10px] font-semibold text-amber-300">Missing</span>}
+        {over && <span className="text-[10px] font-semibold text-amber-300">Too long</span>}
+      </div>
     </div>
   );
 }
@@ -118,8 +172,10 @@ export function OpportunityEditor({
   showFeatured = true,
   showAdminNote = true,
 }: Props) {
-  const flagged = (name: string) => fieldErrors.includes(name);
-  const titleMissing = !titleIsReal(draft.title);
+  const flagged = (name: string) => fieldErrors.includes(name) || (
+    name in WORD_LIMITS && overWordLimit(name as keyof typeof WORD_LIMITS, draft[name as keyof OpportunityDraft] as string)
+  );
+  const titleMissing = !draft.title.trim() || draft.title.trim().length < 8 || /notice board|untitled/i.test(draft.title);
   const coreMissing = !draft.registration_deadline && !draft.registration_url.trim();
   const preview = mediaUrl(draft.flyer_url);
 
@@ -134,7 +190,12 @@ export function OpportunityEditor({
   return (
     <div className="space-y-3">
       <div>
-        <Label text="Title" missing={titleMissing} />
+        <Label
+          text="Title"
+          missing={titleMissing}
+          words={wordCount(draft.title)}
+          limit={WORD_LIMITS.title}
+        />
         <input
           value={draft.title}
           onChange={(event) => onChange({ title: event.target.value })}
@@ -142,7 +203,12 @@ export function OpportunityEditor({
         />
       </div>
       <div>
-        <Label text="Summary" missing={!draft.summary.trim()} />
+        <Label
+          text="Summary"
+          missing={!draft.summary.trim()}
+          words={wordCount(draft.summary)}
+          limit={WORD_LIMITS.summary}
+        />
         <textarea
           value={draft.summary}
           rows={2}
@@ -151,7 +217,12 @@ export function OpportunityEditor({
         />
       </div>
       <div>
-        <Label text="Description" missing={!draft.description.trim()} />
+        <Label
+          text="Description"
+          missing={!draft.description.trim()}
+          words={wordCount(draft.description)}
+          limit={WORD_LIMITS.description}
+        />
         <textarea
           value={draft.description}
           rows={4}
@@ -250,7 +321,12 @@ export function OpportunityEditor({
         </label>
       )}
       <div>
-        <Label text="Eligibility" missing={!draft.eligibility_summary.trim()} />
+        <Label
+          text="Eligibility"
+          missing={!draft.eligibility_summary.trim()}
+          words={wordCount(draft.eligibility_summary)}
+          limit={WORD_LIMITS.eligibility_summary}
+        />
         <textarea
           value={draft.eligibility_summary}
           rows={2}
@@ -269,12 +345,16 @@ export function OpportunityEditor({
       </div>
       {showAdminNote && (
         <div>
-          <Label text="Change note" />
+          <Label
+            text="Change note"
+            words={wordCount(draft.admin_note)}
+            limit={WORD_LIMITS.admin_note}
+          />
           <input
             value={draft.admin_note}
             placeholder="Optional note for audit logs"
             onChange={(event) => onChange({ admin_note: event.target.value })}
-            className={inputClass(false)}
+            className={inputClass(flagged("admin_note"))}
           />
         </div>
       )}

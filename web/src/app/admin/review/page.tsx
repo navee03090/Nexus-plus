@@ -22,6 +22,7 @@ import {
   uploadVerificationFlyer,
 } from "@/lib/api";
 import { signalBusy } from "@/components/TopProgress";
+import { WORD_LIMITS, overWordLimit, wordCount } from "@/components/admin/OpportunityEditor";
 import { Category, Opportunity, VerificationItem } from "@/types";
 
 type Draft = {
@@ -113,12 +114,17 @@ function correctionsFrom(draft: Draft): ReviewCorrection {
 
 function titleIsReal(title: string) {
   const text = title.trim();
-  return text.length >= 8 && !/notice board|untitled/i.test(text);
+  return text.length >= 8 && !/notice board|untitled/i.test(text) && !overWordLimit("title", text);
 }
 
 function draftIsReady(draft: Draft) {
   const hasCore = Boolean(draft.registration_deadline) || Boolean(draft.registration_url.trim());
-  return titleIsReal(draft.title) && hasCore;
+  const withinWords =
+    !overWordLimit("title", draft.title) &&
+    !overWordLimit("summary", draft.summary) &&
+    !overWordLimit("description", draft.description) &&
+    !overWordLimit("eligibility_summary", draft.eligibility_summary);
+  return titleIsReal(draft.title) && hasCore && withinWords;
 }
 
 function mergeOpportunity(item: VerificationItem, saved?: Partial<Opportunity>): VerificationItem {
@@ -159,11 +165,30 @@ const inputClass = (flagged: boolean) =>
       : "border-slate-800 bg-slate-950"
   }`;
 
-function Label({ text, missing }: { text: string; missing?: boolean }) {
+function Label({
+  text,
+  missing,
+  words,
+  limit,
+}: {
+  text: string;
+  missing?: boolean;
+  words?: number;
+  limit?: number;
+}) {
+  const over = limit != null && words != null && words > limit;
   return (
-    <div className="mb-1 flex items-center justify-between">
+    <div className="mb-1 flex items-center justify-between gap-2">
       <span className="text-[11px] font-semibold text-slate-400">{text}</span>
-      {missing && <span className="text-[10px] font-semibold text-amber-300">Missing</span>}
+      <div className="flex items-center gap-2">
+        {limit != null && words != null && (
+          <span className={`text-[10px] font-mono ${over ? "text-amber-300 font-semibold" : "text-slate-500"}`}>
+            {words}/{limit} words
+          </span>
+        )}
+        {missing && <span className="text-[10px] font-semibold text-amber-300">Missing</span>}
+        {over && <span className="text-[10px] font-semibold text-amber-300">Too long</span>}
+      </div>
     </div>
   );
 }
@@ -372,7 +397,7 @@ export default function VerificationReviewPage() {
   const raw = current.source_evidence;
   const sourceText = shown(raw.body_raw) || shown(raw.title_raw) || "No source text was saved.";
   const preview = mediaUrl(draft.flyer_url);
-  const titleMissing = !titleIsReal(draft.title);
+  const titleMissing = !draft.title.trim() || draft.title.trim().length < 8 || /notice board|untitled/i.test(draft.title);
   const coreMissing = !draft.registration_deadline && !draft.registration_url.trim();
 
   return (
@@ -498,29 +523,44 @@ export default function VerificationReviewPage() {
               </div>
 
               <div>
-                <Label text="Title" missing={titleMissing} />
+                <Label
+                  text="Title"
+                  missing={titleMissing}
+                  words={wordCount(draft.title)}
+                  limit={WORD_LIMITS.title}
+                />
                 <input
                   value={draft.title}
                   onChange={(event) => patchDraft({ title: event.target.value })}
-                  className={inputClass(titleMissing || flagged("title"))}
+                  className={inputClass(titleMissing || flagged("title") || overWordLimit("title", draft.title))}
                 />
               </div>
               <div>
-                <Label text="Summary" missing={!draft.summary.trim()} />
+                <Label
+                  text="Summary"
+                  missing={!draft.summary.trim()}
+                  words={wordCount(draft.summary)}
+                  limit={WORD_LIMITS.summary}
+                />
                 <textarea
                   value={draft.summary}
                   rows={2}
                   onChange={(event) => patchDraft({ summary: event.target.value })}
-                  className={inputClass(flagged("summary"))}
+                  className={inputClass(flagged("summary") || overWordLimit("summary", draft.summary))}
                 />
               </div>
               <div>
-                <Label text="Description" missing={!draft.description.trim()} />
+                <Label
+                  text="Description"
+                  missing={!draft.description.trim()}
+                  words={wordCount(draft.description)}
+                  limit={WORD_LIMITS.description}
+                />
                 <textarea
                   value={draft.description}
                   rows={4}
                   onChange={(event) => patchDraft({ description: event.target.value })}
-                  className={inputClass(flagged("description"))}
+                  className={inputClass(flagged("description") || overWordLimit("description", draft.description))}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -603,12 +643,17 @@ export default function VerificationReviewPage() {
                 Online event
               </label>
               <div>
-                <Label text="Eligibility" missing={!draft.eligibility_summary.trim()} />
+                <Label
+                  text="Eligibility"
+                  missing={!draft.eligibility_summary.trim()}
+                  words={wordCount(draft.eligibility_summary)}
+                  limit={WORD_LIMITS.eligibility_summary}
+                />
                 <textarea
                   value={draft.eligibility_summary}
                   rows={2}
                   onChange={(event) => patchDraft({ eligibility_summary: event.target.value })}
-                  className={inputClass(flagged("eligibility_summary"))}
+                  className={inputClass(flagged("eligibility_summary") || overWordLimit("eligibility_summary", draft.eligibility_summary))}
                 />
               </div>
               <div>

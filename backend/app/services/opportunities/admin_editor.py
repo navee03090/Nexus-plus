@@ -24,6 +24,15 @@ WEAK_TITLE = re.compile(r"notice board|untitled", re.IGNORECASE)
 FLYER_MAX_BYTES = 5 * 1024 * 1024
 LIVE_STATUSES = ("published", "updated")
 
+# Editorial word caps for admin/curator text fields.
+WORD_LIMITS = {
+    "title": 25,
+    "summary": 60,
+    "description": 500,
+    "eligibility_summary": 120,
+    "admin_note": 80,
+}
+
 
 class OpportunityCorrection(BaseModel):
     title: Optional[str] = None
@@ -59,6 +68,25 @@ def blank(value: Optional[str]) -> Optional[str]:
         return None
     text = str(value).strip()
     return text or None
+
+
+def word_count(value: Optional[str]) -> int:
+    text = (value or "").strip()
+    if not text:
+        return 0
+    return len(re.findall(r"\S+", text))
+
+
+def enforce_word_limit(field: str, value: Optional[str]) -> None:
+    limit = WORD_LIMITS.get(field)
+    if not limit:
+        return
+    count = word_count(value)
+    if count > limit:
+        reject_fields(
+            f"{field.replace('_', ' ').title()} must be {limit} words or fewer (now {count}).",
+            [field],
+        )
 
 
 def parse_optional_dt(value: Optional[str], field: str) -> Optional[datetime]:
@@ -207,6 +235,7 @@ async def apply_corrections(
             reject_fields("Title cannot be empty.", ["title"])
         if len(title) > 500:
             reject_fields("Title is too long.", ["title"])
+        enforce_word_limit("title", title)
         if title != opp.title:
             opp.slug = await unique_slug(db, title)
         opp.title = title
@@ -215,11 +244,13 @@ async def apply_corrections(
 
     if "summary" in data:
         summary = (data["summary"] or "").strip()
+        enforce_word_limit("summary", summary)
         opp.summary = summary
         after["summary"] = summary
 
     if "description" in data:
         description = (data["description"] or "").strip()
+        enforce_word_limit("description", description)
         opp.description = description
         after["description"] = description
 
@@ -293,6 +324,7 @@ async def apply_corrections(
 
     if "eligibility_summary" in data:
         eligibility = blank(data["eligibility_summary"])
+        enforce_word_limit("eligibility_summary", eligibility)
         opp.eligibility_summary = eligibility
         after["eligibility_summary"] = eligibility
 
@@ -306,6 +338,9 @@ async def apply_corrections(
     if "featured" in data:
         opp.featured = bool(data["featured"])
         after["featured"] = opp.featured
+
+    if admin_note:
+        enforce_word_limit("admin_note", admin_note)
 
     opp.updated_at = datetime.now(timezone.utc)
     after["updated_at"] = iso(opp.updated_at)
