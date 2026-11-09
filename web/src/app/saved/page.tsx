@@ -3,11 +3,12 @@ import Link from "next/link";
 import { Bookmark, Compass, Sparkles } from "lucide-react";
 import { OpportunityCard } from "@/components/OpportunityCard";
 import { fetchSavedOpportunities } from "@/lib/api";
+import { prepareListings } from "@/lib/opportunityDisplay";
 
 export const revalidate = 0;
 
 export default async function SavedPage() {
-  const savedList = await fetchSavedOpportunities();
+  const savedList = prepareListings(await fetchSavedOpportunities(), { showPast: true });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1 flex flex-col">

@@ -61,6 +61,7 @@ export async function fetchOpportunities(params?: {
   urgency?: string;
   limit?: number;
   page?: number;
+  includePast?: boolean;
 }): Promise<Opportunity[]> {
   const page = await fetchOpportunitiesPage(params);
   return page.items;
@@ -74,6 +75,7 @@ export async function fetchOpportunitiesPage(params?: {
   urgency?: string;
   limit?: number;
   page?: number;
+  includePast?: boolean;
 }): Promise<OpportunitiesPageResult> {
   const page = Math.max(1, params?.page || 1);
   const pageSize = Math.min(Math.max(1, params?.limit || 12), 50);

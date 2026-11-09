@@ -12,17 +12,19 @@ import {
 import { OpportunityCard } from "@/components/OpportunityCard";
 import { StatsCounters } from "@/components/StatsCounters";
 import { fetchOpportunities, fetchAdminStats, fetchCategories } from "@/lib/api";
+import { isDisplayable, isExpired, prepareListings } from "@/lib/opportunityDisplay";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
   const [opportunities, stats, categories] = await Promise.all([
-    fetchOpportunities({ limit: 6 }),
+    fetchOpportunities({ limit: 50 }),
     fetchAdminStats(),
     fetchCategories(),
   ]);
 
-  const featuredList = opportunities.slice(0, 6);
+  const liveListings = prepareListings(opportunities.filter((item) => isDisplayable(item) && !isExpired(item)));
+  const featuredList = liveListings.slice(0, 6);
 
   return (
     <div className="flex flex-col min-h-screen">

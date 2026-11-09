@@ -32,7 +32,22 @@ export const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({
     displayLabel = urgency;
   }
 
-  const normalized = urgency.toLowerCase();
+  const normalized = (urgency || "").toLowerCase();
+  const noDeadline =
+    !deadline &&
+    (normalized === "rolling" ||
+      normalized === "normal" ||
+      /no deadline/i.test(displayLabel || ""));
+
+  if (noDeadline) {
+    return (
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-white/5 text-np-faint border border-white/10 ${className}`}
+      >
+        Rolling
+      </span>
+    );
+  }
 
   if (normalized === "urgent" || (label && label.toLowerCase().includes("today"))) {
     return (

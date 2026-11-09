@@ -3,11 +3,12 @@ import Link from "next/link";
 import { Sparkles, Settings2, ShieldCheck } from "lucide-react";
 import { OpportunityCard } from "@/components/OpportunityCard";
 import { fetchRecommended } from "@/lib/api";
+import { prepareListings } from "@/lib/opportunityDisplay";
 
 export const revalidate = 0;
 
 export default async function ForYouPage() {
-  const recommendations = await fetchRecommended();
+  const recommendations = prepareListings(await fetchRecommended());
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1">

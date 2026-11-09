@@ -23,6 +23,13 @@ import { VerificationBadge } from "@/components/VerificationBadge";
 import { OpportunityCard } from "@/components/OpportunityCard";
 import { FlyerImage } from "@/components/FlyerImage";
 import { OpportunityActionButtons } from "./OpportunityActionButtons";
+import {
+  displayDescription,
+  knownOrganizer,
+  locationLabel,
+  meaningful,
+  prepareListings,
+} from "@/lib/opportunityDisplay";
 
 interface OpportunityDetailPageProps {
   params: {
@@ -46,9 +53,12 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
     category: opportunity.category_slug || undefined,
     limit: 12,
   });
-  const related = relatedPool
+  const related = prepareListings(relatedPool)
     .filter((o) => o.id !== opportunity.id && o.slug !== opportunity.slug)
     .slice(0, 3);
+  const body = displayDescription(opportunity);
+  const organizer = knownOrganizer(opportunity.organization_name);
+  const place = locationLabel(opportunity);
 
   return (
     <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1 ${opportunity.registration_url ? "pb-24 lg:pb-10" : ""}`}>
@@ -82,24 +92,21 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
               />
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold text-np-text tracking-tight leading-snug">
+            <h1
+              className="text-2xl sm:text-3xl font-bold text-np-text tracking-tight leading-snug"
+              style={{ viewTransitionName: `title-${opportunity.slug}` }}
+            >
               {opportunity.title}
             </h1>
 
-            <div className="flex items-center gap-3 pt-1 text-sm text-np-muted">
-              <div className="w-9 h-9 rounded-np bg-np-surface-2 border border-np-border flex items-center justify-center font-bold text-np-accent">
-                {opportunity.organization_name ? opportunity.organization_name.charAt(0) : "O"}
+            {organizer ? (
+              <div className="flex items-center gap-2 pt-1 text-sm text-np-muted">
+                <span className="font-semibold text-np-text">{organizer}</span>
+                {meaningful(opportunity.city) ? (
+                  <span className="text-np-faint text-xs">· {meaningful(opportunity.city)}</span>
+                ) : null}
               </div>
-              <div>
-                <div className="font-semibold text-np-text">
-                  {opportunity.organization_name || "Official institution"}
-                </div>
-                <div className="text-np-faint text-xs">
-                  {opportunity.city}
-                  {opportunity.country ? `, ${opportunity.country}` : ""}
-                </div>
-              </div>
-            </div>
+            ) : null}
           </div>
 
           {opportunity.flyer_url && (
@@ -129,12 +136,14 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
             </div>
           )}
 
-          <div className="p-6 sm:p-8 np-panel space-y-4">
-            <h2 className="text-lg font-bold text-np-text tracking-tight">About this opportunity</h2>
-            <div className="text-sm sm:text-[15px] text-np-muted leading-relaxed whitespace-pre-line">
-              {opportunity.description || opportunity.summary}
+          {body ? (
+            <div className="p-6 sm:p-8 np-panel space-y-4">
+              <h2 className="text-lg font-bold text-np-text tracking-tight">About this opportunity</h2>
+              <div className="text-sm sm:text-[15px] text-np-muted leading-relaxed whitespace-pre-line">
+                {body}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           {(opportunity.eligibility_summary || opportunity.target_audience.length > 0) && (
             <div className="p-6 sm:p-8 np-panel space-y-4">
@@ -320,42 +329,44 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
             <OpportunityActionButtons opportunity={opportunity} />
 
             <div className="pt-4 border-t border-np-border space-y-3.5 text-sm">
-              <div className="flex items-start justify-between gap-3">
-                <span className="text-np-muted flex items-center gap-1.5 shrink-0">
-                  <Clock className="w-4 h-4 text-np-danger" />
-                  <span>Deadline</span>
-                </span>
-                <span className="font-semibold text-np-text text-right">
-                  {opportunity.registration_deadline
-                    ? formatDate(opportunity.registration_deadline)
-                    : "Not specified"}
-                </span>
-              </div>
+              {opportunity.registration_deadline ? (
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-np-muted flex items-center gap-1.5 shrink-0">
+                    <Clock className="w-4 h-4 text-np-accent" />
+                    <span>Deadline</span>
+                  </span>
+                  <span className="font-semibold text-np-text text-right tabular-nums">
+                    {formatDate(opportunity.registration_deadline)}
+                  </span>
+                </div>
+              ) : null}
 
-              <div className="flex items-start justify-between gap-3">
-                <span className="text-np-muted flex items-center gap-1.5 shrink-0">
-                  <Calendar className="w-4 h-4 text-np-accent" />
-                  <span>Event date</span>
-                </span>
-                <span className="font-semibold text-np-text text-right">
-                  {opportunity.start_date ? formatDate(opportunity.start_date) : "TBA"}
-                  {opportunity.end_date && ` – ${formatDate(opportunity.end_date)}`}
-                </span>
-              </div>
+              {opportunity.start_date ? (
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-np-muted flex items-center gap-1.5 shrink-0">
+                    <Calendar className="w-4 h-4 text-np-accent" />
+                    <span>Event date</span>
+                  </span>
+                  <span className="font-semibold text-np-text text-right tabular-nums">
+                    {formatDate(opportunity.start_date)}
+                    {opportunity.end_date && ` – ${formatDate(opportunity.end_date)}`}
+                  </span>
+                </div>
+              ) : null}
 
-              <div className="flex items-start justify-between gap-3">
-                <span className="text-np-muted flex items-center gap-1.5 shrink-0">
-                  {opportunity.is_online ? (
-                    <Globe className="w-4 h-4 text-np-online" />
-                  ) : (
-                    <MapPin className="w-4 h-4 text-np-faint" />
-                  )}
-                  <span>Location</span>
-                </span>
-                <span className="font-semibold text-np-text text-right">
-                  {opportunity.is_online ? "Online / Virtual" : opportunity.venue || opportunity.city}
-                </span>
-              </div>
+              {place ? (
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-np-muted flex items-center gap-1.5 shrink-0">
+                    {opportunity.is_online ? (
+                      <Globe className="w-4 h-4 text-np-accent" />
+                    ) : (
+                      <MapPin className="w-4 h-4 text-np-faint" />
+                    )}
+                    <span>Location</span>
+                  </span>
+                  <span className="font-semibold text-np-text text-right">{place}</span>
+                </div>
+              ) : null}
 
               {opportunity.contact_email && (
                 <div className="flex items-start justify-between gap-3">
@@ -372,15 +383,15 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
                 </div>
               )}
 
-              <div className="flex items-start justify-between gap-3">
-                <span className="text-np-muted flex items-center gap-1.5 shrink-0">
-                  <Building2 className="w-4 h-4 text-np-faint" />
-                  <span>Organizer</span>
-                </span>
-                <span className="font-semibold text-np-text text-right">
-                  {opportunity.organization_name || "Official institution"}
-                </span>
-              </div>
+              {organizer ? (
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-np-muted flex items-center gap-1.5 shrink-0">
+                    <Building2 className="w-4 h-4 text-np-faint" />
+                    <span>Organizer</span>
+                  </span>
+                  <span className="font-semibold text-np-text text-right">{organizer}</span>
+                </div>
+              ) : null}
             </div>
 
             {opportunity.tags.length > 0 && (

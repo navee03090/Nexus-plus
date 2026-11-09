@@ -101,7 +101,7 @@ function isUpcomingOpportunity(row: {
 }
 
 function deadlineUrgency(deadline?: string | null): { status: string; label: string } {
-  if (!deadline) return { status: "Normal", label: "No deadline specified" };
+  if (!deadline) return { status: "Rolling", label: "Rolling" };
   const diff = new Date(deadline).getTime() - Date.now();
   if (Number.isNaN(diff) || diff <= 0) return { status: "Expired", label: "Registration Closed" };
   const hours = diff / 3_600_000;
@@ -152,7 +152,7 @@ function mapOpportunity(row: SupabaseOpportunityRow): Opportunity {
     updated_at: row.updated_at || new Date().toISOString(),
     published_at: row.published_at || row.created_at || new Date().toISOString(),
     organization_id: row.organization_id || undefined,
-    organization_name: org?.name || "Verified Organizer",
+    organization_name: org?.name || undefined,
     organization_slug: org?.slug || undefined,
     organization_logo: org?.logo_url || undefined,
     category_id: row.category_id || undefined,
@@ -176,6 +176,7 @@ export type PublishedListParams = {
   limit?: number;
   page?: number;
   featuredFirst?: boolean;
+  includePast?: boolean;
 };
 
 export type PublishedPageResult = {
@@ -264,7 +265,8 @@ export async function fetchPublishedPageFromSupabase(
   }
   if (!data || data.length === 0) return empty;
 
-  let items = data.filter(isUpcomingOpportunity).map(mapOpportunity);
+  let rows = params?.includePast ? data : data.filter(isUpcomingOpportunity);
+  let items = rows.map(mapOpportunity);
   if (params?.urgency === "urgent") {
     items = items.filter(
       (o) => o.deadline_urgency === "Urgent" || o.deadline_urgency === "Closing Soon"

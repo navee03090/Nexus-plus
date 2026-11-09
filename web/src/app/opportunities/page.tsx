@@ -3,7 +3,8 @@ import Link from "next/link";
 import { Search, Filter, X } from "lucide-react";
 import { OpportunityCard } from "@/components/OpportunityCard";
 import { Pagination } from "@/components/Pagination";
-import { fetchOpportunitiesPage, fetchCategories, searchOpportunities } from "@/lib/api";
+import { fetchOpportunities, fetchCategories, searchOpportunities } from "@/lib/api";
+import { paginate, prepareListings } from "@/lib/opportunityDisplay";
 
 interface OpportunitiesPageProps {
   searchParams: {
@@ -14,6 +15,7 @@ interface OpportunitiesPageProps {
     urgency?: string;
     sort?: string;
     page?: string;
+    past?: string;
   };
 }
 
@@ -49,36 +51,37 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
     urgency = "",
     sort = "newest",
     page: pageRaw = "1",
+    past = "",
   } = searchParams;
 
   const page = Math.max(1, parseInt(pageRaw, 10) || 1);
-  const queryLower = q.trim().toLowerCase();
+  const showPast = past === "1" || past === "true";
+  const queryLower = q.trim();
 
-  const categoriesPromise = fetchCategories();
+  const [pool, categories] = await Promise.all([
+    queryLower
+      ? searchOpportunities(queryLower)
+      : fetchOpportunities({
+          category: category || undefined,
+          city: city || undefined,
+          is_online: online === "true" ? true : online === "false" ? false : undefined,
+          urgency: urgency || undefined,
+          sort_by: sort === "trust" ? "trust" : sort,
+          limit: 50,
+          includePast: true,
+        }),
+    fetchCategories(),
+  ]);
 
-  let items;
-  let meta;
-  let categories;
-
+  let filtered = pool;
   if (queryLower) {
-    const [searched, cats] = await Promise.all([
-      searchOpportunities(q.trim()),
-      categoriesPromise,
-    ]);
-    categories = cats;
-
-    let filtered = searched;
     if (category) {
       filtered = filtered.filter(
         (o) => o.category_slug === category || o.category_name?.toLowerCase() === category.toLowerCase()
       );
     }
-    if (city) {
-      filtered = filtered.filter((o) => (o.city || "").toLowerCase() === city.toLowerCase());
-    }
-    if (online === "true") {
-      filtered = filtered.filter((o) => o.is_online);
-    }
+    if (city) filtered = filtered.filter((o) => (o.city || "").toLowerCase() === city.toLowerCase());
+    if (online === "true") filtered = filtered.filter((o) => o.is_online);
     if (urgency === "urgent") {
       filtered = filtered.filter(
         (o) =>
@@ -87,51 +90,12 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
           o.deadline_urgency === "urgent"
       );
     }
-
-    const sorted = [...filtered].sort((a, b) => {
-      if (sort === "trust") return (b.trust_score || 0) - (a.trust_score || 0);
-      if (sort === "deadline") {
-        const hasA = !!a.registration_deadline;
-        const hasB = !!b.registration_deadline;
-        if (hasA && hasB) {
-          return (
-            new Date(a.registration_deadline!).getTime() -
-            new Date(b.registration_deadline!).getTime()
-          );
-        }
-        if (hasA && !hasB) return -1;
-        if (!hasA && hasB) return 1;
-      }
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-
-    const totalItems = sorted.length;
-    const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
-    const safePage = Math.min(page, totalPages);
-    items = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-    meta = {
-      page: safePage,
-      page_size: PAGE_SIZE,
-      total_items: totalItems,
-      total_pages: totalPages,
-    };
-  } else {
-    const [result, cats] = await Promise.all([
-      fetchOpportunitiesPage({
-        category: category || undefined,
-        city: city || undefined,
-        is_online: online === "true" ? true : online === "false" ? false : undefined,
-        urgency: urgency || undefined,
-        sort_by: sort === "trust" ? "trust" : sort,
-        limit: PAGE_SIZE,
-        page,
-      }),
-      categoriesPromise,
-    ]);
-    categories = cats;
-    items = result.items;
-    meta = result.meta;
   }
+
+  const prepared = prepareListings(filtered, { showPast, sort });
+  const paged = paginate(prepared, page, PAGE_SIZE);
+  const items = paged.items;
+  const meta = paged.meta;
 
   const activeFiltersCount = [category, city, online, urgency].filter(Boolean).length;
   const base = {
@@ -141,10 +105,14 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
     online: online || undefined,
     urgency: urgency || undefined,
     sort: sort !== "newest" ? sort : undefined,
+    past: showPast ? "1" : undefined,
   };
 
   const hrefForPage = (p: number) =>
     `/opportunities${buildQuery({ ...base, page: p > 1 ? String(p) : undefined })}`;
+
+  const rangeStart = meta.total_items === 0 ? 0 : (meta.page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = rangeStart === 0 ? 0 : rangeStart + items.length - 1;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1 flex flex-col">
@@ -170,6 +138,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
           {online && <input type="hidden" name="online" value={online} />}
           {urgency && <input type="hidden" name="urgency" value={urgency} />}
           {sort && sort !== "newest" && <input type="hidden" name="sort" value={sort} />}
+          {showPast && <input type="hidden" name="past" value="1" />}
           <button type="submit" className="absolute right-2 np-btn-primary py-1.5 px-4 text-xs">
             Search
           </button>
@@ -251,6 +220,18 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
             >
               Closing soon
             </Link>
+
+            <Link
+              href={`/opportunities${buildQuery({ ...base, past: showPast ? undefined : "1", page: undefined })}`}
+              className={`px-2.5 py-1 rounded-md border ${
+                showPast
+                  ? "bg-white/10 text-np-text border-white/15"
+                  : "bg-np-surface-2 text-np-muted border-np-border hover:text-np-text"
+              }`}
+              aria-pressed={showPast}
+            >
+              Show past
+            </Link>
           </div>
 
           {activeFiltersCount > 0 && (
@@ -267,13 +248,11 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div className="text-sm text-np-muted">
-          Showing <span className="text-np-text font-semibold">{items.length}</span>
-          {meta.total_items > 0 && (
-            <>
-              {" "}
-              of <span className="text-np-text font-semibold">{meta.total_items}</span>
-            </>
-          )}{" "}
+          Showing{" "}
+          <span className="text-np-text font-semibold tabular-nums">
+            {rangeStart}–{rangeEnd}
+          </span>{" "}
+          of <span className="text-np-text font-semibold tabular-nums">{meta.total_items}</span>{" "}
           opportunities
           {q && (
             <span>
