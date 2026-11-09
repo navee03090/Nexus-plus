@@ -1,18 +1,13 @@
 import React, { Suspense, cache } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { OpportunityGrid } from "@/components/OpportunityGrid";
 import { StatsCounters } from "@/components/StatsCounters";
 import { ClosingSoonRail } from "@/components/ClosingSoonRail";
 import { HomeChrome, LivePill, MapFrame, StatsPlaceholder } from "@/components/HomeChrome";
+import { PakistanMap } from "@/components/PakistanMap";
 import { fetchOpportunities, fetchAdminStats, fetchCategories } from "@/lib/api";
 import { closesWithinDays, prepareListings } from "@/lib/opportunityDisplay";
 import { MAP_CITIES } from "@/lib/mapCities";
-
-const PakistanMap = dynamic(
-  () => import("@/components/PakistanMap").then((mod) => mod.PakistanMap),
-  { ssr: false, loading: () => <MapFrame /> }
-);
 
 export const revalidate = 60;
 

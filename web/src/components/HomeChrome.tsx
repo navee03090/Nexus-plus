@@ -2,7 +2,11 @@ import React from "react";
 import Link from "next/link";
 import { ArrowRight, Search } from "lucide-react";
 import { HeroHeadline } from "@/components/HeroHeadline";
+import { PakistanMap } from "@/components/PakistanMap";
 import { TrustPipeline } from "@/components/TrustPipeline";
+import { MAP_CITIES } from "@/lib/mapCities";
+
+const EMPTY_COUNTS = Object.fromEntries(MAP_CITIES.map((city) => [city.name, 0]));
 
 export function LivePill({ count }: { count?: number | null }) {
   return (
@@ -18,12 +22,7 @@ export function LivePill({ count }: { count?: number | null }) {
 }
 
 export function MapFrame() {
-  return (
-    <div
-      className="mx-auto h-[420px] w-full max-w-md rounded-np-lg border border-white/[0.07] bg-np-surface"
-      aria-hidden="true"
-    />
-  );
+  return <PakistanMap counts={EMPTY_COUNTS} />;
 }
 
 const STAT_LABELS = [
@@ -38,7 +37,9 @@ export function StatsPlaceholder() {
     <div className="grid grid-cols-2 gap-4 text-center sm:gap-6 md:grid-cols-4">
       {STAT_LABELS.map((label) => (
         <div key={label} className="p-3">
-          <div className="text-2xl font-bold tabular-nums text-np-accent sm:text-3xl">—</div>
+          <div className="text-2xl font-bold tabular-nums text-transparent sm:text-3xl" aria-hidden="true">
+            0
+          </div>
           <div className="mt-1 text-sm text-np-muted">{label}</div>
         </div>
       ))}
