@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import NumberFlow from "@number-flow/react";
 
 type StatItem = {
   value: number;
@@ -9,101 +10,54 @@ type StatItem = {
   colorClass?: string;
 };
 
-function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mq.matches);
-    const onChange = () => setReduced(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-  return reduced;
-}
-
-function CountUp({
-  value,
-  suffix = "",
-  active,
-  reduced,
-}: {
-  value: number;
-  suffix?: string;
-  active: boolean;
-  reduced: boolean;
-}) {
-  const [display, setDisplay] = useState(reduced ? value : 0);
+function StatValue({ value, suffix = "" }: { value: number; suffix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [display, setDisplay] = useState(value);
+  const [shown, setShown] = useState(false);
 
   useEffect(() => {
-    if (!active) return;
-    if (reduced) {
-      setDisplay(value);
-      return;
-    }
-
-    const duration = 900;
-    const start = performance.now();
-    let frame = 0;
-
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
-      setDisplay(Math.round(value * eased));
-      if (t < 1) frame = requestAnimationFrame(tick);
-    };
-
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [active, value, reduced]);
+    const node = ref.current;
+    if (!node) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
+        if (reduced) {
+          setDisplay(value);
+          setShown(true);
+          return;
+        }
+        setDisplay(0);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setDisplay(value);
+            setShown(true);
+          });
+        });
+      },
+      { threshold: 0.4 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [value]);
 
   return (
-    <span className="tabular-nums">
-      {display}
-      {suffix}
+    <span ref={ref} className={shown ? "opacity-100" : "opacity-0"} style={{ transition: "opacity 180ms linear" }}>
+      <NumberFlow value={display} suffix={suffix} respectMotionPreference />
     </span>
   );
 }
 
 export function StatsCounters({ items }: { items: StatItem[] }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(false);
-  const reduced = usePrefersReducedMotion();
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setActive(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.35 }
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <div ref={ref} className="grid grid-cols-2 gap-4 text-center sm:gap-6 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 text-center sm:gap-6 md:grid-cols-4">
       {items.map((item) => (
-        <div key={item.label} className="p-3 np-fade-up">
-          <div
-            className={`text-2xl sm:text-3xl font-bold tabular-nums ${
-              item.colorClass || "text-np-accent"
-            }`}
-          >
-            <CountUp
-              value={item.value}
-              suffix={item.suffix}
-              active={active}
-              reduced={reduced}
-            />
+        <div key={item.label} className="p-3">
+          <div className={`text-2xl font-bold tabular-nums sm:text-3xl ${item.colorClass || "text-np-accent"}`}>
+            <StatValue value={item.value} suffix={item.suffix} />
           </div>
-          <div className="text-sm text-np-muted mt-1">{item.label}</div>
+          <div className="mt-1 text-sm text-np-muted">{item.label}</div>
         </div>
       ))}
     </div>

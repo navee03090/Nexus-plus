@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Bookmark, Compass, Sparkles } from "lucide-react";
-import { OpportunityCard } from "@/components/OpportunityCard";
+import { OpportunityGrid } from "@/components/OpportunityGrid";
 import { fetchSavedOpportunities } from "@/lib/api";
 import { prepareListings } from "@/lib/opportunityDisplay";
 
@@ -46,11 +46,7 @@ export default async function SavedPage() {
           </div>
         </div>
       ) : (
-        <div className="np-stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {savedList.map((opp) => (
-            <OpportunityCard key={opp.id} opportunity={opp} showMatchScore={false} />
-          ))}
-        </div>
+        <OpportunityGrid items={savedList} />
       )}
     </div>
   );

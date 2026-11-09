@@ -5,11 +5,13 @@ export function Skeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-np bg-np-surface-2 border border-np-border/60",
+        "relative overflow-hidden rounded-np border border-white/[0.06] bg-np-surface-2",
         className
       )}
       aria-hidden="true"
-    />
+    >
+      <span className="absolute inset-0 -translate-x-full animate-np-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+    </div>
   );
 }
 

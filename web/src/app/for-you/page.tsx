@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Sparkles, Settings2, ShieldCheck } from "lucide-react";
-import { OpportunityCard } from "@/components/OpportunityCard";
+import { OpportunityGrid } from "@/components/OpportunityGrid";
 import { fetchRecommended } from "@/lib/api";
 import { prepareListings } from "@/lib/opportunityDisplay";
 
@@ -68,11 +68,7 @@ export default async function ForYouPage() {
           </p>
         </div>
       ) : (
-        <div className="np-stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {recommendations.map((opp) => (
-            <OpportunityCard key={opp.id} opportunity={opp} showMatchScore={true} />
-          ))}
-        </div>
+        <OpportunityGrid items={recommendations} showMatchScore />
       )}
     </div>
   );

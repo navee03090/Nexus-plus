@@ -67,10 +67,15 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateY(14px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        "np-shimmer": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
+        },
       },
       animation: {
         "np-fade": "np-fade 0.35s ease-out",
         "np-fade-up": "np-fade-up 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "np-shimmer": "np-shimmer 1.4s ease-in-out infinite",
       },
     },
   },

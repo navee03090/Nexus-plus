@@ -123,6 +123,23 @@
   }
 }
 
+@keyframes np-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(2.3);
+    opacity: 0;
+  }
+}
+
+.np-ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: np-ping 2.4s ease-out infinite;
+}
+
 @keyframes np-fade-up {
   from {
     opacity: 0;
@@ -163,6 +180,11 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #3a4b61;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

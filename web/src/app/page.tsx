@@ -1,11 +1,28 @@
 import React from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Search, ArrowRight } from "lucide-react";
-import { OpportunityCard } from "@/components/OpportunityCard";
+import { OpportunityGrid } from "@/components/OpportunityGrid";
 import { StatsCounters } from "@/components/StatsCounters";
 import { TrustPipeline } from "@/components/TrustPipeline";
+import { HeroHeadline } from "@/components/HeroHeadline";
+import { ClosingSoonRail } from "@/components/ClosingSoonRail";
 import { fetchOpportunities, fetchAdminStats, fetchCategories } from "@/lib/api";
 import { closesWithinDays, prepareListings } from "@/lib/opportunityDisplay";
+import { MAP_CITIES } from "@/lib/mapCities";
+
+const PakistanMap = dynamic(
+  () => import("@/components/PakistanMap").then((mod) => mod.PakistanMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="mx-auto h-[420px] w-full max-w-md rounded-np-lg border border-white/[0.07] bg-np-surface"
+        aria-hidden="true"
+      />
+    ),
+  }
+);
 
 export const revalidate = 60;
 
@@ -18,7 +35,13 @@ export default async function HomePage() {
 
   const liveListings = prepareListings(opportunities);
   const featuredList = liveListings.slice(0, 6);
-  const closingThisWeek = liveListings.filter((item) => closesWithinDays(item, 7)).length;
+  const closingSoon = liveListings
+    .filter((item) => closesWithinDays(item, 7))
+    .sort(
+      (a, b) =>
+        new Date(a.registration_deadline || 0).getTime() - new Date(b.registration_deadline || 0).getTime()
+    );
+  const closingThisWeek = closingSoon.length;
   const statItems = [
     { value: stats.sources_monitored ?? 0, label: "Sources monitored", colorClass: "text-np-accent" },
     { value: liveListings.length, label: "Live opportunities", colorClass: "text-np-accent" },
@@ -29,6 +52,13 @@ export default async function HomePage() {
       colorClass: "text-np-accent",
     },
   ];
+  const cityCounts = Object.fromEntries(MAP_CITIES.map((city) => [city.name, 0])) as Record<string, number>;
+  for (const item of liveListings) {
+    const city = (item.city || "").trim().toLowerCase();
+    const match = MAP_CITIES.find((entry) => entry.name.toLowerCase() === city);
+    if (match) cityCounts[match.name] += 1;
+  }
+
   if ((stats.duplicates_resolved ?? 0) > 0) {
     statItems.splice(2, 0, {
       value: stats.duplicates_resolved ?? 0,
@@ -42,7 +72,8 @@ export default async function HomePage() {
       <section className="relative overflow-hidden border-b border-white/[0.07] pt-16 pb-14 md:pt-24 md:pb-20">
         <div className="np-grain pointer-events-none absolute inset-0 -z-10 opacity-[0.07]" aria-hidden="true" />
 
-        <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(260px,0.9fr)] lg:gap-6 lg:px-8">
+          <div className="text-center lg:text-left">
           <p className="np-fade-up mb-5 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-np-surface px-3 py-1 text-xs font-medium text-np-muted">
             <span className="h-1.5 w-1.5 rounded-full bg-np-accent" aria-hidden="true" />
             <span className="tabular-nums">{liveListings.length} live opportunities</span>
@@ -50,16 +81,14 @@ export default async function HomePage() {
             <span>updated today</span>
           </p>
 
-          <h1 className="np-fade-up np-delay-1 mx-auto mb-5 max-w-3xl text-4xl font-bold leading-[1.15] tracking-tight text-np-text sm:text-5xl md:text-[3.25rem]">
-            Find <span className="font-serif text-[1.05em] font-normal italic text-np-accent">verified</span> opportunities across Pakistan
-          </h1>
+          <HeroHeadline />
 
-          <p className="np-fade-up np-delay-2 text-base sm:text-lg text-np-muted max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="np-fade-up np-delay-2 mx-auto mb-10 max-w-2xl text-base leading-relaxed text-np-muted sm:text-lg lg:mx-0">
             Scholarships, hackathons, fellowships, incubators, and research programs —
             sourced from official portals and confirmed before they go live.
           </p>
 
-          <div className="np-fade-up np-delay-3 max-w-2xl mx-auto mb-8">
+          <div className="np-fade-up np-delay-3 mx-auto mb-8 max-w-2xl lg:mx-0">
             <form action="/opportunities" method="GET" className="relative flex items-center">
               <Search className="absolute left-4 w-5 h-5 text-np-faint pointer-events-none" />
               <input
@@ -73,7 +102,7 @@ export default async function HomePage() {
               </button>
             </form>
 
-            <div className="flex items-center justify-center gap-2 mt-4 text-sm text-np-muted flex-wrap">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm text-np-muted lg:justify-start">
               <span className="text-np-faint">Popular:</span>
               <Link href="/opportunities?category=scholarship" className="hover:text-np-accent underline decoration-np-border">
                 HEC Scholarships
@@ -93,12 +122,14 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="np-fade-up np-delay-4 flex flex-wrap items-center justify-center gap-3">
+          <div className="np-fade-up np-delay-4 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
             <Link href="/opportunities" className="np-btn-primary px-6">
               <span>Explore opportunities</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
+          </div>
+          <PakistanMap counts={cityCounts} />
         </div>
       </section>
 
@@ -107,6 +138,8 @@ export default async function HomePage() {
           <StatsCounters items={statItems} />
         </div>
       </section>
+
+      <ClosingSoonRail items={closingSoon.slice(0, 8)} />
 
       <section className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="flex items-center justify-between mb-4 gap-3">
@@ -152,11 +185,7 @@ export default async function HomePage() {
             <p className="text-sm text-np-muted">No active opportunities found yet. Check back soon.</p>
           </div>
         ) : (
-          <div className="np-stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {featuredList.map((opp) => (
-              <OpportunityCard key={opp.id} opportunity={opp} showMatchScore={false} />
-            ))}
-          </div>
+          <OpportunityGrid items={featuredList} />
         )}
       </section>
 

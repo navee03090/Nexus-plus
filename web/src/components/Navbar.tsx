@@ -1,119 +1,105 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Compass, Menu, X, Search, MapPin } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Compass, Menu, Search, X } from "lucide-react";
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [compact, setCompact] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const exploreActive = pathname.startsWith("/opportunities");
 
-  const navLinks: { name: string; href: string; icon: typeof Compass }[] = [
-    { name: "Explore", href: "/opportunities", icon: Compass },
-  ];
+  useEffect(() => {
+    const onScroll = () => setCompact(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
-  const isActive = (href: string) => {
-    if (href === "/opportunities") {
-      return pathname.startsWith("/opportunities");
-    }
-    return pathname.startsWith(href);
+  const openCommand = () => {
+    const event = new CustomEvent("np-command", { cancelable: true });
+    const handled = !window.dispatchEvent(event);
+    if (!handled) router.push("/opportunities");
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-np-border/80 bg-np-bg/90 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <Link href="/" className="flex items-center gap-2.5 group min-w-0">
-              <div className="flex items-center justify-center w-9 h-9 rounded-np bg-np-surface border border-np-border text-np-accent font-bold text-sm tracking-tight group-hover:border-np-accent/40 transition-colors">
-                NP
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="font-bold text-base tracking-tight text-np-text truncate">
-                  Nexus<span className="text-np-accent">Pulse</span>
-                </span>
-                <span className="text-[10px] text-np-faint tracking-wide -mt-0.5 hidden sm:block">
-                  Opportunity Intelligence
-                </span>
-              </div>
-            </Link>
-
-            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-np-surface border border-np-border text-[11px] text-np-muted ml-2">
-              <MapPin className="w-3 h-3 text-np-verify" />
-              <span>Coverage: Pakistan</span>
+    <header
+      className={`sticky top-0 z-40 w-full border-b border-white/[0.07] ${
+        compact ? "bg-np-bg/80 backdrop-blur-md" : "bg-np-bg"
+      }`}
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className={`flex items-center justify-between gap-4 ${compact ? "h-14" : "h-16"}`}>
+          <Link href="/" className="flex min-w-0 items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-np border border-white/10 bg-np-surface text-sm font-bold tracking-tight text-np-accent">
+              NP
             </div>
-          </div>
-
-          <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              const active = isActive(link.href);
-              return (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className={`relative flex items-center gap-2 px-3 py-1.5 rounded-np text-sm font-medium transition-colors ${
-                    active
-                      ? "text-np-text bg-np-surface border border-np-border"
-                      : "text-np-muted hover:text-np-text hover:bg-np-surface/60"
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 ${active ? "text-np-accent" : ""}`} />
-                  <span>{link.name}</span>
-                </Link>
-              );
-            })}
-          </nav>
+            <span className="truncate text-base font-bold tracking-tight text-np-text">
+              Nexus<span className="text-np-accent">Pulse</span>
+            </span>
+          </Link>
 
           <div className="flex items-center gap-2">
-            <Link
-              href="/opportunities"
-              className="p-2 rounded-np text-np-muted hover:text-np-text hover:bg-np-surface transition-colors md:hidden"
+            <button
+              type="button"
+              onClick={openCommand}
+              className="hidden items-center gap-2 rounded-np border border-white/10 bg-np-surface px-2.5 py-1.5 text-xs text-np-muted hover:text-np-text md:inline-flex"
               aria-label="Search opportunities"
             >
-              <Search className="w-4 h-4" />
+              <Search className="h-3.5 w-3.5" />
+              <span>Search</span>
+              <kbd className="rounded border border-white/10 px-1 text-[10px] text-np-faint">⌘K</kbd>
+            </button>
+
+            <Link
+              href="/opportunities"
+              className={`hidden items-center gap-2 rounded-np px-3 py-1.5 text-sm font-medium md:inline-flex ${
+                exploreActive
+                  ? "border border-white/10 bg-np-surface text-np-text"
+                  : "text-np-muted hover:text-np-text"
+              }`}
+            >
+              <Compass className={`h-3.5 w-3.5 ${exploreActive ? "text-np-accent" : ""}`} />
+              Explore
             </Link>
 
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-np text-np-muted hover:text-np-text hover:bg-np-surface md:hidden transition-colors"
+              type="button"
+              onClick={openCommand}
+              className="rounded-np p-2 text-np-muted hover:text-np-text md:hidden"
+              aria-label="Search opportunities"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              className="rounded-np p-2 text-np-muted hover:text-np-text md:hidden"
               aria-label="Toggle menu"
               aria-expanded={mobileMenuOpen}
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
       </div>
 
-      {mobileMenuOpen && (
-        <div className="md:hidden border-b border-np-border bg-np-bg/95 backdrop-blur-xl px-4 py-3 space-y-1">
-          {navLinks.map((link) => {
-            const Icon = link.icon;
-            const active = isActive(link.href);
-            return (
-              <Link
-                key={link.name}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-np text-sm font-medium ${
-                  active
-                    ? "bg-np-surface text-np-text border border-np-border"
-                    : "text-np-muted hover:bg-np-surface"
-                }`}
-              >
-                <Icon className="w-4 h-4 text-np-accent" />
-                <span>{link.name}</span>
-              </Link>
-            );
-          })}
-          <div className="pt-2 border-t border-np-border flex items-center justify-between text-xs text-np-muted px-3">
-            <span>Nationwide coverage across Pakistan</span>
-            <span className="w-2 h-2 rounded-full bg-np-verify" />
-          </div>
+      {mobileMenuOpen ? (
+        <div className="border-b border-white/[0.07] bg-np-bg px-4 py-3 md:hidden">
+          <Link
+            href="/opportunities"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2 rounded-np px-3 py-2.5 text-sm font-medium text-np-text"
+          >
+            <Compass className="h-4 w-4 text-np-accent" />
+            Explore
+          </Link>
         </div>
-      )}
+      ) : null}
     </header>
   );
 };

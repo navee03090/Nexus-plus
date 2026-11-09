@@ -20,7 +20,7 @@ import { fetchOpportunityBySlug, fetchOpportunities } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { UrgencyBadge } from "@/components/UrgencyBadge";
 import { VerificationBadge } from "@/components/VerificationBadge";
-import { OpportunityCard } from "@/components/OpportunityCard";
+import { OpportunityGrid } from "@/components/OpportunityGrid";
 import { FlyerImage } from "@/components/FlyerImage";
 import { OpportunityActionButtons } from "./OpportunityActionButtons";
 import {
@@ -299,11 +299,7 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
           {related.length > 0 && (
             <div className="space-y-4 pt-2">
               <h2 className="text-lg font-bold text-np-text tracking-tight">Related opportunities</h2>
-              <div className="np-stagger grid grid-cols-1 md:grid-cols-2 gap-5">
-                {related.map((opp) => (
-                  <OpportunityCard key={opp.id} opportunity={opp} showMatchScore={false} />
-                ))}
-              </div>
+              <OpportunityGrid items={related} className="grid grid-cols-1 gap-5 md:grid-cols-2" />
             </div>
           )}
         </div>

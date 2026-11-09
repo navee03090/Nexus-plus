@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Calendar,
   MapPin,
@@ -34,6 +35,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
   opportunity,
   showMatchScore = true,
 }) => {
+  const router = useRouter();
   const [isSaved, setIsSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const expired = isExpired(opportunity);
@@ -46,6 +48,19 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
     : opportunity.start_date
       ? formatDate(opportunity.start_date)
       : "";
+
+  const openDetail = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    const start = (document as Document & { startViewTransition?: (cb: () => void) => void }).startViewTransition;
+    if (!start) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const href = event.currentTarget.getAttribute("href");
+    if (!href) return;
+    event.preventDefault();
+    start(() => {
+      router.push(href);
+    });
+  };
 
   const handleToggleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -119,7 +134,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
           </button>
         </div>
 
-        <Link href={`/opportunities/${opportunity.slug}`} className="mb-2 block">
+        <Link href={`/opportunities/${opportunity.slug}`} onClick={openDetail} className="mb-2 block">
           <h3
             className="line-clamp-2 text-base font-semibold leading-snug text-np-text transition-colors group-hover:text-np-accent"
             style={{ viewTransitionName: `title-${opportunity.slug}` }}
@@ -164,6 +179,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
         <div className="mt-4 flex items-center justify-end border-t border-white/10 pt-4">
           <Link
             href={`/opportunities/${opportunity.slug}`}
+            onClick={openDetail}
             className="inline-flex items-center gap-1 text-sm font-semibold text-np-accent"
           >
             <span>View</span>

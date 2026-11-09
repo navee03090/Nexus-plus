@@ -1,8 +1,9 @@
 import React from "react";
 import Link from "next/link";
 import { Search, Filter, X } from "lucide-react";
-import { OpportunityCard } from "@/components/OpportunityCard";
+import { OpportunityGrid } from "@/components/OpportunityGrid";
 import { Pagination } from "@/components/Pagination";
+import { SlidingChips } from "@/components/SlidingChips";
 import { fetchOpportunities, fetchCategories, searchOpportunities } from "@/lib/api";
 import { paginate, prepareListings } from "@/lib/opportunityDisplay";
 
@@ -144,26 +145,31 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
           </button>
         </form>
 
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-np-border text-xs">
-          <Link
-            href={`/opportunities${buildQuery({ q: q || undefined, city: city || undefined, online: online || undefined, urgency: urgency || undefined, sort: base.sort })}`}
-            className={`px-3 py-1.5 rounded-np font-medium transition-colors ${
-              !category ? "np-chip-active border" : "np-chip"
-            }`}
-          >
-            All categories
-          </Link>
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/opportunities${buildQuery({ ...base, category: cat.slug, page: undefined })}`}
-              className={`px-3 py-1.5 rounded-np font-medium transition-colors ${
-                category === cat.slug ? "np-chip-active border" : "np-chip"
-              }`}
-            >
-              {cat.name}
-            </Link>
-          ))}
+        <div className="border-t border-white/[0.07] pt-3">
+          <SlidingChips
+            group="categories"
+            chips={[
+              {
+                id: "all",
+                label: "All categories",
+                href: `/opportunities${buildQuery({
+                  q: q || undefined,
+                  city: city || undefined,
+                  online: online || undefined,
+                  urgency: urgency || undefined,
+                  sort: base.sort,
+                  past: base.past,
+                })}`,
+                active: !category,
+              },
+              ...categories.map((cat) => ({
+                id: cat.id,
+                label: cat.name,
+                href: `/opportunities${buildQuery({ ...base, category: cat.slug, page: undefined })}`,
+                active: category === cat.slug,
+              })),
+            ]}
+          />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
@@ -312,11 +318,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
         </div>
       ) : (
         <>
-          <div className="np-stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {items.map((opp) => (
-              <OpportunityCard key={opp.id} opportunity={opp} showMatchScore={false} />
-            ))}
-          </div>
+          <OpportunityGrid items={items} />
           <Pagination page={meta.page} totalPages={meta.total_pages} hrefForPage={hrefForPage} />
         </>
       )}
