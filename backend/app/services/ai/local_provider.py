@@ -11,6 +11,7 @@ import time
 from typing import List, Optional, Dict, Any
 import httpx
 
+from app.services.ai.audience import audience_named_in_text
 from app.services.ai.base import AIProvider
 from app.schemas.opportunity import GeminiExtractionOutput
 from app.core.config import settings
@@ -25,6 +26,7 @@ CRITICAL ZERO-HALLUCINATION RULES:
 5. Pakistani sources default to Asia/Karachi timezone (+05:00).
 6. You MUST return ONLY a valid JSON object matching the requested schema. Do not add conversational text.
 7. Only current or upcoming opportunities. If the event date AND registration deadline have already passed, set is_opportunity=false.
+8. target_audience lists only groups named in the text. If none are named, return []. Never write Students or Developers unless those words appear in the text.
 """
 
 
@@ -137,7 +139,7 @@ class LocalAIProvider(AIProvider):
             '  "registration_deadline": "YYYY-MM-DD or null",\n'
             '  "registration_url": "URL or null",\n'
             '  "contact_email": "Email or null",\n'
-            '  "target_audience": ["Students", "Developers"],\n'
+            '  "target_audience": [],\n'
             '  "tags": ["AI", "Software"],\n'
             '  "confidence_score": 0.95\n'
             '}'
@@ -187,6 +189,9 @@ class LocalAIProvider(AIProvider):
                         if parsed_dict.get(list_key) is None:
                             parsed_dict[list_key] = []
                 extracted = GeminiExtractionOutput.model_validate(parsed_dict)
+                extracted.target_audience = audience_named_in_text(
+                    extracted.target_audience, raw_text, caption, ocr_text
+                )
                 self.last_used_model = f"local/{self.model}"
                 logger.info(f"[LocalAI] Successfully extracted opportunity using local model={self.model}")
                 return extracted
@@ -297,7 +302,7 @@ class LocalAIProvider(AIProvider):
             is_opportunity=True,
             title=title[:200],
             category=category,
-            target_audience=["Students", "Developers"],
+            target_audience=[],
             registration_url=reg_url,
             confidence_score=0.85,
             verification_status="needs_review",

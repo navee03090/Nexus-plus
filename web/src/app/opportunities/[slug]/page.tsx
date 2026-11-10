@@ -24,6 +24,7 @@ import { OpportunityGrid } from "@/components/OpportunityGrid";
 import { FlyerImage } from "@/components/FlyerImage";
 import { OpportunityActionButtons } from "./OpportunityActionButtons";
 import {
+  displayAudience,
   displayDescription,
   isExpired,
   knownOrganizer,
@@ -62,6 +63,7 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
   const organizer = knownOrganizer(opportunity.organization_name);
   const place = locationLabel(opportunity);
   const expired = isExpired(opportunity);
+  const audience = displayAudience(opportunity);
 
   return (
     <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1 ${opportunity.registration_url ? "pb-24 lg:pb-10" : ""}`}>
@@ -157,7 +159,7 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
             </div>
           ) : null}
 
-          {(opportunity.eligibility_summary || opportunity.target_audience.length > 0) && (
+          {(opportunity.eligibility_summary || audience.length > 0) && (
             <div className="p-6 sm:p-8 np-panel space-y-4">
               <h2 className="text-lg font-bold text-np-text tracking-tight flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-np-accent" />
@@ -171,11 +173,11 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
                 </div>
               )}
 
-              {opportunity.target_audience.length > 0 && (
+              {audience.length > 0 && (
                 <div>
                   <span className="text-sm font-semibold text-np-muted block mb-2">Who should apply</span>
                   <div className="flex flex-wrap gap-2">
-                    {opportunity.target_audience.map((aud, i) => (
+                    {audience.map((aud, i) => (
                       <span
                         key={i}
                         className="px-3 py-1 rounded-np bg-np-surface-2 border border-np-border text-sm text-np-text font-medium"

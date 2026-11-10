@@ -78,6 +78,36 @@ export function locationLabel(opportunity: Opportunity): string {
   return meaningful(opportunity.venue) || meaningful(opportunity.city);
 }
 
+function mentioned(corpus: string, token: string): boolean {
+  const forms = [token];
+  if (token.endsWith("s") && token.length > 4) forms.push(token.slice(0, -1));
+  else forms.push(`${token}s`);
+  return forms.some((form) => new RegExp(`\\b${form}\\b`, "i").test(corpus));
+}
+
+export function displayAudience(opportunity: Opportunity): string[] {
+  const corpus = [
+    opportunity.title,
+    opportunity.summary,
+    opportunity.description,
+    opportunity.eligibility_summary,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  const seen = new Set<string>();
+  const labels: string[] = [];
+  for (const raw of opportunity.target_audience || []) {
+    const label = raw.replace(/\s+/g, " ").trim();
+    const key = label.toLowerCase();
+    if (!label || seen.has(key) || /^(general|everyone|all)$/i.test(label)) continue;
+    if (/^(students?|developers?)$/i.test(key) && !mentioned(corpus, key)) continue;
+    seen.add(key);
+    labels.push(label);
+  }
+  return labels;
+}
+
 type SortKey = "newest" | "deadline" | "trust" | string;
 
 function compare(a: Opportunity, b: Opportunity, sort: SortKey): number {

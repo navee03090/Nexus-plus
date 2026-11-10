@@ -9,6 +9,7 @@ import re
 from typing import List, Optional, Dict, Any
 import dateutil.parser
 
+from app.services.ai.audience import audience_named_in_text
 from app.services.ai.base import AIProvider
 from app.schemas.opportunity import GeminiExtractionOutput
 from app.services.ai.key_pool import KeyRotator
@@ -29,6 +30,7 @@ CRITICAL ZERO-HALLUCINATION RULES:
 8. If the announcement represents a deadline extension, cancellation, or postponement, set 'possible_update': true and state what changed.
 9. Return output strictly matching the requested JSON schema.
 10. Only current or upcoming opportunities. If the event date AND registration deadline have already passed, set is_opportunity=false.
+11. target_audience lists only groups named in the text. If none are named, return []. Never write Students or Developers unless those words appear in the text.
 """
 
 
@@ -140,6 +142,9 @@ class GeminiProvider(AIProvider):
                         if response.text:
                             parsed_dict = json.loads(response.text)
                             extracted = GeminiExtractionOutput.model_validate(parsed_dict)
+                            extracted.target_audience = audience_named_in_text(
+                                extracted.target_audience, raw_text, caption, ocr_text
+                            )
                             self.key_rotator.mark_success(key)
                             self.last_used_model = model
                             self.last_used_key_prefix = key[:10]
@@ -262,7 +267,11 @@ class GeminiProvider(AIProvider):
             organization=org,
             category=category,
             tags=tags,
-            target_audience=["Students", "Developers"] if "student" in full_lower else ["General"],
+            target_audience=audience_named_in_text(
+                (["Students"] if re.search(r"\bstudents?\b", full_lower) else [])
+                + (["Developers"] if re.search(r"\bdevelopers?\b", full_lower) else []),
+                full_corpus,
+            ),
             venue="Main Campus" if "campus" in full_lower else "See details",
             city=city,
             country="Pakistan",
