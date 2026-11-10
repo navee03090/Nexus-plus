@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import {
   LayoutDashboard,
   ShieldCheck,
@@ -19,7 +20,15 @@ import {
 
 export const AdminSidebar: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+
+  const signOut = async () => {
+    await fetch("/api/admin/session", { method: "DELETE" });
+    await supabase.auth.signOut();
+    router.replace("/admin/login");
+    router.refresh();
+  };
 
   const menuItems = [
     { name: "Overview", href: "/admin", icon: LayoutDashboard },
@@ -98,26 +107,40 @@ export const AdminSidebar: React.FC = () => {
       {open && (
         <div className="md:hidden border-b border-np-border bg-np-surface p-4">
           {Nav}
-          <div className="pt-4 border-t border-np-border mt-4">
+          <div className="pt-4 border-t border-np-border mt-4 space-y-1">
+            <button
+              type="button"
+              onClick={signOut}
+              className="flex w-full items-center justify-between rounded-np px-3 py-2 text-xs font-medium text-np-muted hover:bg-np-surface-2 hover:text-np-text"
+            >
+              <span>Sign out</span>
+            </button>
             <Link
               href="/"
               className="flex items-center justify-between px-3 py-2 rounded-np text-xs font-medium text-np-muted hover:text-np-text hover:bg-np-surface-2"
             >
-              <span>Return to portal</span>
+              <span>View public site</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       )}
 
-      <aside className="hidden md:flex w-64 bg-np-surface/60 border-r border-np-border p-4 flex-col justify-between shrink-0 min-h-[calc(100vh-4rem)]">
+      <aside className="hidden md:flex w-64 shrink-0 flex-col justify-between border-r border-np-border bg-np-surface/60 p-4 min-h-screen">
         {Nav}
-        <div className="pt-4 border-t border-np-border">
+        <div className="space-y-1 border-t border-np-border pt-4">
+          <button
+            type="button"
+            onClick={signOut}
+            className="flex w-full items-center justify-between rounded-np px-3 py-2 text-xs font-medium text-np-muted transition-colors hover:bg-np-surface-2 hover:text-np-text"
+          >
+            <span>Sign out</span>
+          </button>
           <Link
             href="/"
             className="flex items-center justify-between px-3 py-2 rounded-np text-xs font-medium text-np-muted hover:text-np-text hover:bg-np-surface-2 transition-colors"
           >
-            <span>Return to portal</span>
+            <span>View public site</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </Link>
         </div>

@@ -1,4 +1,5 @@
 import { Opportunity, Category, Organization, Source, VerificationItem } from "@/types";
+import { supabase } from "./supabase";
 import { FALLBACK_OPPORTUNITIES } from "./fallback_data";
 import {
   fetchPublishedFromSupabase,
@@ -38,6 +39,30 @@ export function getBase(): string {
 }
 
 // FALLBACK_OPPORTUNITIES imported from ./fallback_data
+
+async function getAdminAccessToken(): Promise<string | null> {
+  if (typeof window === "undefined") {
+    try {
+      const { cookies } = await import("next/headers");
+      return cookies().get("np_admin")?.value || null;
+    } catch {
+      return null;
+    }
+  }
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token || null;
+}
+
+async function adminFetch(url: string, options: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
+  const headers = new Headers(options.headers);
+  const token = await getAdminAccessToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const res = await fetchWithTimeout(url, { ...options, headers }, timeoutMs);
+  if ((res.status === 401 || res.status === 403) && typeof window !== "undefined") {
+    window.location.assign("/admin/login");
+  }
+  return res;
+}
 
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 4500): Promise<Response> {
   const controller = new AbortController();
@@ -243,7 +268,7 @@ const EMPTY_ADMIN_STATS = {
 export async function fetchAdminStats() {
   // Prefer API first — Supabase anon RLS hides `sources`, which made the homepage show 0.
   try {
-    const res = await fetchWithTimeout(`${getBase()}/admin/stats`, { cache: "no-store" }, 8000);
+    const res = await fetchWithTimeout(`${getBase()}/public-stats`, { cache: "no-store" }, 8000);
     if (res.ok) {
       const json = await res.json();
       if (json.data) {
@@ -290,41 +315,50 @@ export async function fetchAdminStats() {
 }
 
 export async function fetchLiveAdminStats() {
-  try {
-    const res = await fetchWithTimeout(`${getBase()}/admin/stats`, { cache: "no-store" }, 8000);
-    if (res.ok) {
-      const json = await res.json();
-      if (json.data) return json.data;
-    }
-  } catch {}
-  return fetchAdminStats();
+  const res = await adminFetch(`${getBase()}/admin/stats`, { cache: "no-store" }, 8000);
+  if (res.status === 401 || res.status === 403) {
+    const { redirect } = await import("next/navigation");
+    redirect("/admin/login");
+  }
+  if (res.ok) {
+    const json = await res.json();
+    if (json.data) return json.data;
+  }
+  return { ...EMPTY_ADMIN_STATS };
 }
 
 export async function fetchDetailedHealth() {
+  let res: Response;
   try {
-    const res = await fetchWithTimeout(`${getBase()}/health/detailed`, { cache: "no-store" }, 8000);
-    if (res.ok) {
-      const json = await res.json();
-      return json.data || null;
-    }
-  } catch {}
+    res = await adminFetch(`${getBase()}/health/detailed`, { cache: "no-store" }, 8000);
+  } catch {
+    return null;
+  }
+  if (res.status === 401 || res.status === 403) {
+    const { redirect } = await import("next/navigation");
+    redirect("/admin/login");
+  }
+  if (res.ok) {
+    const json = await res.json();
+    return json.data || null;
+  }
   return null;
 }
 
 export async function fetchAdminSources(): Promise<any[]> {
   try {
-    const res = await fetchWithTimeout(`${getBase()}/admin/sources`, { cache: "no-store" }, 8000);
+    const res = await adminFetch(`${getBase()}/admin/sources`, { cache: "no-store" }, 8000);
     if (res.ok) {
       const json = await res.json();
       if (Array.isArray(json.data)) return json.data;
     }
   } catch {}
-  return fetchSources();
+  return [];
 }
 
 export async function fetchIngestionRuns(): Promise<any[]> {
   try {
-    const res = await fetchWithTimeout(`${getBase()}/admin/ingestion/runs`, { cache: "no-store" }, 8000);
+    const res = await adminFetch(`${getBase()}/admin/ingestion/runs`, { cache: "no-store" }, 8000);
     if (res.ok) {
       const json = await res.json();
       return json.data || [];
@@ -335,7 +369,7 @@ export async function fetchIngestionRuns(): Promise<any[]> {
 
 export async function fetchAuditLogs(): Promise<any[]> {
   try {
-    const res = await fetchWithTimeout(`${getBase()}/admin/audit-logs`, { cache: "no-store" }, 8000);
+    const res = await adminFetch(`${getBase()}/admin/audit-logs`, { cache: "no-store" }, 8000);
     if (res.ok) {
       const json = await res.json();
       return json.data || [];
@@ -346,7 +380,7 @@ export async function fetchAuditLogs(): Promise<any[]> {
 
 export async function fetchVerificationQueue(): Promise<{ items: VerificationItem[]; error?: string }> {
   try {
-    const res = await fetchWithTimeout(`${getBase()}/admin/review`, { cache: "no-store" }, 12000);
+    const res = await adminFetch(`${getBase()}/admin/review`, { cache: "no-store" }, 12000);
     if (res.ok) {
       const json = await res.json();
       return { items: json.data || [] };
@@ -430,7 +464,7 @@ async function readReviewError(res: Response): Promise<ReviewWriteResult> {
 
 export async function saveVerificationItem(queueId: string, corrections: ReviewCorrection): Promise<ReviewWriteResult> {
   try {
-    const res = await fetch(`${getBase()}/admin/review/${queueId}`, {
+    const res = await adminFetch(`${getBase()}/admin/review/${queueId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(corrections),
@@ -447,7 +481,7 @@ export async function uploadVerificationFlyer(queueId: string, file: File): Prom
   try {
     const body = new FormData();
     body.append("flyer_file", file);
-    const res = await fetch(`${getBase()}/admin/review/${queueId}/flyer`, {
+    const res = await adminFetch(`${getBase()}/admin/review/${queueId}/flyer`, {
       method: "POST",
       body,
     });
@@ -461,7 +495,7 @@ export async function uploadVerificationFlyer(queueId: string, file: File): Prom
 
 export async function approveVerificationItem(queueId: string, corrections?: ReviewCorrection): Promise<ReviewWriteResult> {
   try {
-    const res = await fetch(`${getBase()}/admin/review/${queueId}/approve`, {
+    const res = await adminFetch(`${getBase()}/admin/review/${queueId}/approve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(corrections || {}),
@@ -476,7 +510,7 @@ export async function approveVerificationItem(queueId: string, corrections?: Rev
 
 export async function rejectVerificationItem(queueId: string, reason?: string): Promise<{ success: boolean }> {
   try {
-    const res = await fetch(`${getBase()}/admin/review/${queueId}/reject`, {
+    const res = await adminFetch(`${getBase()}/admin/review/${queueId}/reject`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reason: reason || "Rejected by admin" }),
@@ -502,7 +536,7 @@ export async function fetchAdminOpportunities(
   if (params.offset != null) qs.set("offset", String(params.offset));
   const suffix = qs.toString() ? `?${qs.toString()}` : "";
   try {
-    const res = await fetchWithTimeout(`${getBase()}/admin/opportunities${suffix}`, { cache: "no-store" }, 12000);
+    const res = await adminFetch(`${getBase()}/admin/opportunities${suffix}`, { cache: "no-store" }, 12000);
     if (!res.ok) {
       return { items: [], total: 0, live_count: 0, limit: 40, offset: 0, error: `Catalog API returned ${res.status}` };
     }
@@ -525,7 +559,7 @@ export async function saveAdminOpportunity(
   corrections: OpportunityCorrection
 ): Promise<ReviewWriteResult> {
   try {
-    const res = await fetch(`${getBase()}/admin/opportunities/${opportunityId}`, {
+    const res = await adminFetch(`${getBase()}/admin/opportunities/${opportunityId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(corrections),
@@ -545,7 +579,7 @@ export async function uploadAdminOpportunityFlyer(
   try {
     const body = new FormData();
     body.append("flyer_file", file);
-    const res = await fetch(`${getBase()}/admin/opportunities/${opportunityId}/flyer`, {
+    const res = await adminFetch(`${getBase()}/admin/opportunities/${opportunityId}/flyer`, {
       method: "POST",
       body,
     });
@@ -559,7 +593,7 @@ export async function uploadAdminOpportunityFlyer(
 
 export async function unpublishAdminOpportunity(opportunityId: string): Promise<ReviewWriteResult> {
   try {
-    const res = await fetch(`${getBase()}/admin/opportunities/${opportunityId}/unpublish`, { method: "POST" });
+    const res = await adminFetch(`${getBase()}/admin/opportunities/${opportunityId}/unpublish`, { method: "POST" });
     if (!res.ok) return readReviewError(res);
     const json = await res.json();
     return { success: true, opportunity: json.data?.opportunity };
@@ -573,7 +607,7 @@ export async function rejectAdminOpportunity(
   reason?: string
 ): Promise<ReviewWriteResult> {
   try {
-    const res = await fetch(`${getBase()}/admin/opportunities/${opportunityId}/reject`, {
+    const res = await adminFetch(`${getBase()}/admin/opportunities/${opportunityId}/reject`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reason: reason || "Rejected by admin" }),
@@ -588,7 +622,7 @@ export async function rejectAdminOpportunity(
 
 export async function expireAdminOpportunity(opportunityId: string): Promise<ReviewWriteResult> {
   try {
-    const res = await fetch(`${getBase()}/admin/opportunities/${opportunityId}/expire`, { method: "POST" });
+    const res = await adminFetch(`${getBase()}/admin/opportunities/${opportunityId}/expire`, { method: "POST" });
     if (!res.ok) return readReviewError(res);
     const json = await res.json();
     return { success: true, opportunity: json.data?.opportunity };
@@ -602,7 +636,7 @@ export async function publishAdminOpportunity(
   corrections?: OpportunityCorrection
 ): Promise<ReviewWriteResult> {
   try {
-    const res = await fetch(`${getBase()}/admin/opportunities/${opportunityId}/publish`, {
+    const res = await adminFetch(`${getBase()}/admin/opportunities/${opportunityId}/publish`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(corrections || {}),
@@ -616,7 +650,7 @@ export async function publishAdminOpportunity(
 }
 
 export async function testSourceCrawl(url: string, sourceType: string, parserKey: string) {
-  const res = await fetch(`${getBase()}/admin/sources/test`, {
+  const res = await adminFetch(`${getBase()}/admin/sources/test`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url, source_type: sourceType, parser_key: parserKey }),
@@ -693,10 +727,10 @@ export interface CuratorResult {
 
 export async function curateOpportunity(formData: FormData): Promise<{ success: boolean; data?: CuratorResult; error?: string }> {
   try {
-    const res = await fetch(`${getBase()}/ingestion/curator`, {
+    const res = await adminFetch(`${getBase()}/ingestion/curator`, {
       method: "POST",
       body: formData,
-    });
+    }, 120000);
     const json = await res.json();
     if (!res.ok) {
       return { success: false, error: json.detail || json.message || "Failed to process curation" };
@@ -709,7 +743,7 @@ export async function curateOpportunity(formData: FormData): Promise<{ success: 
 
 export async function triggerSourceCrawl(sourceId: string): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    const res = await fetch(`${getBase()}/admin/sources/${sourceId}/crawl`, {
+    const res = await adminFetch(`${getBase()}/admin/sources/${sourceId}/crawl`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
@@ -733,7 +767,7 @@ export async function createAdminSource(payload: {
   trust_score: number;
 }): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    const res = await fetch(`${getBase()}/admin/sources`, {
+    const res = await adminFetch(`${getBase()}/admin/sources`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -753,7 +787,7 @@ export async function triggerApifyScrape(
   platform: "Facebook" | "Instagram" = "Facebook"
 ): Promise<{ success: boolean; data?: any; error?: string; run_id?: string; message?: string }> {
   try {
-    const res = await fetch(
+    const res = await adminFetch(
       `${getBase()}/ingestion/social/apify/trigger?target_url=${encodeURIComponent(targetUrl)}&platform=${platform}`,
       {
         method: "POST",
@@ -774,7 +808,7 @@ export async function checkApifyRunStatus(
   runId: string
 ): Promise<{ success: boolean; status?: string; error?: string; default_dataset_id?: string }> {
   try {
-    const res = await fetch(`${getBase()}/ingestion/social/apify/run-status?run_id=${encodeURIComponent(runId)}`);
+    const res = await adminFetch(`${getBase()}/ingestion/social/apify/run-status?run_id=${encodeURIComponent(runId)}`);
     const json = await res.json();
     return json;
   } catch (err: any) {
@@ -798,7 +832,7 @@ export async function syncApifyRun(
   platform: "Facebook" | "Instagram" = "Facebook"
 ): Promise<{ success: boolean; status?: string; message?: string; error?: string; opportunities_published?: number; opportunities_updated?: number }> {
   try {
-    const res = await fetch(
+    const res = await adminFetch(
       `${getBase()}/ingestion/social/apify/sync-run?run_id=${encodeURIComponent(runId)}&platform=${platform}`,
       { method: "POST" }
     );

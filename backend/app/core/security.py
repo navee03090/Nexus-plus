@@ -121,21 +121,19 @@ async def get_current_user_claims(credentials: Optional[HTTPAuthorizationCredent
     except Exception as e:
         logger.warning(f"Supabase auth verification failed: {e}")
 
-    # Fallback to dev test token
-    if token.startswith("dev-admin-token"):
-        return {"id": "admin-001", "email": "admin@nexus-pulse.org", "role": "admin"}
-    elif token.startswith("dev-user-token"):
-        return {"id": "user-001", "email": "student@uetpeshawar.edu.pk", "role": "user"}
-
     return None
 
 
+def admin_email_allowlist() -> set:
+    raw = getattr(settings, "ADMIN_EMAILS", "") or ""
+    return {part.strip().lower() for part in raw.split(",") if part.strip()}
+
+
 async def require_admin(claims: Optional[Dict[str, Any]] = Security(get_current_user_claims)) -> Dict[str, Any]:
-    """Ensures request is authenticated with admin privileges."""
-    if claims and claims.get("role") == "admin":
+    """Ensures the bearer token belongs to an allowlisted operator."""
+    if not claims:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sign in required.")
+    email = str(claims.get("email") or "").strip().lower()
+    if email and email in admin_email_allowlist():
         return claims
-    # The admin console has no Supabase session yet (demo login only opens /admin).
-    # /admin/stats is already public, so blocking /admin/review made the queue look empty.
-    if settings.DEBUG or getattr(settings, "ENABLE_ADMIN_BYPASS", False) or claims is None:
-        return {"id": "admin-curator-bypass", "email": "curator@nexus-pulse.org", "role": "admin"}
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required.")

@@ -92,12 +92,6 @@ export const Footer: React.FC = () => {
               Original portals remain the source of truth. NexusPulse validates announcements
               and preserves evidence links before publishing.
             </p>
-            <Link
-              href="/admin"
-              className="inline-block text-xs text-np-faint hover:text-np-muted transition-colors"
-            >
-              Operator console →
-            </Link>
           </div>
         </div>
 

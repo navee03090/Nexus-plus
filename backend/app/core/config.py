@@ -80,8 +80,9 @@ class Settings(BaseSettings):
     # Apify Cloud Integration (Facebook & Instagram Public Crawlers)
     APIFY_API_TOKEN: Optional[str] = None
 
-    # Admin Control Plane Access Bypass (Allows demo UI actions without requiring Supabase JWT)
-    ENABLE_ADMIN_BYPASS: bool = True
+    # Comma-separated operator emails. A Supabase password is still required.
+    ADMIN_EMAILS: str = "navee309010@gmail.com"
+    ENABLE_ADMIN_BYPASS: bool = False
 
     # Meta Graph API (Official Facebook & Instagram Webhooks)
     META_APP_ID: Optional[str] = None

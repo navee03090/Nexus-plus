@@ -72,6 +72,7 @@ async def curate_opportunity(
     flyer_url: Optional[str] = Form(None, description="Direct flyer image URL"),
     tags: Optional[str] = Form(None, description="Optional tag hints (comma-separated)"),
     db: AsyncSession = Depends(get_db),
+    admin_claims: Dict[str, Any] = Depends(require_admin),
 ):
     """
     Curator Ingestion Endpoint (Phase 1):

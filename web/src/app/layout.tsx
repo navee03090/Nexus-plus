@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
-import { BackendWarmup } from "@/components/BackendWarmup";
-import { TopProgress } from "@/components/TopProgress";
-import { CommandPalette } from "@/components/CommandPalette";
+import { SiteFrame } from "@/components/SiteFrame";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "sonner";
 
@@ -50,12 +46,7 @@ export default function RootLayout({
         className={`${plusJakarta.variable} ${instrumentSerif.variable} font-sans min-h-screen flex flex-col bg-np-bg text-np-text antialiased`}
       >
         <NuqsAdapter>
-          <TopProgress />
-          <BackendWarmup />
-          <Navbar />
-          <main className="flex-1 flex flex-col">{children}</main>
-          <Footer />
-          <CommandPalette />
+          <SiteFrame>{children}</SiteFrame>
           <Toaster theme="dark" position="bottom-right" />
         </NuqsAdapter>
       </body>

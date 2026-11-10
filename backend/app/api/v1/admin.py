@@ -77,6 +77,7 @@ async def _load_pending_review(db: AsyncSession, queue_id: str):
 @router.get("/stats")
 async def get_admin_dashboard_stats(
     db: AsyncSession = Depends(get_db),
+    admin_claims: Dict[str, Any] = Depends(require_admin),
 ):
     """Aggregated operational metrics for admin overview (Section 57)."""
     total_sources = (await db.execute(select(func.count(Source.id)))).scalar() or 0

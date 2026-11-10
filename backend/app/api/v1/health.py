@@ -5,10 +5,13 @@ import time
 from typing import Dict, Any
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
+from sqlalchemy import text, select, func
 
 from app.core.database import get_db
 from app.core.config import settings
+from app.core.security import require_admin
+from app.models.opportunity import Opportunity, OpportunitySource
+from app.models.source import Source
 from app.services.ai import get_ai_provider
 
 router = APIRouter(tags=["Health"])
@@ -28,8 +31,32 @@ async def health_check():
     }
 
 
+@router.get("/public-stats")
+async def public_stats(db: AsyncSession = Depends(get_db)):
+    """Homepage counts only. Review queue, failures, and system health stay on the admin API."""
+    total_sources = (await db.execute(select(func.count(Source.id)))).scalar() or 0
+    total_opps = (await db.execute(select(func.count(Opportunity.id)))).scalar() or 0
+    published_opps = (
+        await db.execute(
+            select(func.count(Opportunity.id)).where(Opportunity.status.in_(["published", "updated"]))
+        )
+    ).scalar() or 0
+    total_links = (await db.execute(select(func.count(OpportunitySource.id)))).scalar() or 0
+    return {
+        "data": {
+            "sources_monitored": total_sources,
+            "opportunities_published": published_opps,
+            "duplicates_resolved": max(0, total_links - total_opps),
+            "source_links": total_links,
+        }
+    }
+
+
 @router.get("/health/detailed")
-async def detailed_health_check(db: AsyncSession = Depends(get_db)):
+async def detailed_health_check(
+    db: AsyncSession = Depends(get_db),
+    admin_claims: Dict[str, Any] = Depends(require_admin),
+):
     ai_provider = get_ai_provider()
     ai_diag = ai_provider.get_diagnostics()
     local_configured = bool(settings.LOCAL_AI_BASE_URL)
@@ -98,6 +125,7 @@ async def detailed_health_check(db: AsyncSession = Depends(get_db)):
 async def test_local_ai_endpoint(
     base_url: str = "http://localhost:11434/v1",
     model: str = "qwen2.5:3b",
+    admin_claims: Dict[str, Any] = Depends(require_admin),
 ):
     """
     On-demand connectivity and extraction test for local Ollama / LM Studio runners.
