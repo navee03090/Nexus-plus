@@ -24,18 +24,11 @@ export type OpportunitiesPageResult = {
 export const API_BASE = "https://nexus-pulse-api-ult5.onrender.com/api/v1";
 
 export function getBase(): string {
-  if (typeof window !== "undefined") {
-    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    if (isLocal) {
-      return process.env.NEXT_PUBLIC_LOCAL_API_URL || "http://localhost:8000/api/v1";
-    }
-  } else {
-    // Running on Node.js Server in Next.js (SSR / Server Components)
-    if (process.env.NODE_ENV === "development" || process.env.USE_LOCAL_API === "true") {
-      return process.env.NEXT_PUBLIC_LOCAL_API_URL || "http://localhost:8000/api/v1";
-    }
+  const live = process.env.NEXT_PUBLIC_API_URL || API_BASE;
+  if (process.env.USE_LOCAL_API === "true") {
+    return process.env.NEXT_PUBLIC_LOCAL_API_URL || "http://localhost:8000/api/v1";
   }
-  return process.env.NEXT_PUBLIC_API_URL || "https://nexus-pulse-api-ult5.onrender.com/api/v1";
+  return live;
 }
 
 // FALLBACK_OPPORTUNITIES imported from ./fallback_data
@@ -314,15 +307,28 @@ export async function fetchAdminStats() {
   return { ...EMPTY_ADMIN_STATS };
 }
 
+function isNextRedirect(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "digest" in err &&
+    String((err as { digest?: string }).digest).startsWith("NEXT_REDIRECT")
+  );
+}
+
 export async function fetchLiveAdminStats() {
-  const res = await adminFetch(`${getBase()}/admin/stats`, { cache: "no-store" }, 8000);
-  if (res.status === 401 || res.status === 403) {
-    const { redirect } = await import("next/navigation");
-    redirect("/admin/login");
-  }
-  if (res.ok) {
-    const json = await res.json();
-    if (json.data) return json.data;
+  try {
+    const res = await adminFetch(`${getBase()}/admin/stats`, { cache: "no-store" }, 20000);
+    if (res.status === 401 || res.status === 403) {
+      const { redirect } = await import("next/navigation");
+      redirect("/admin/login");
+    }
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data) return json.data;
+    }
+  } catch (err) {
+    if (isNextRedirect(err)) throw err;
   }
   return { ...EMPTY_ADMIN_STATS };
 }
@@ -330,7 +336,7 @@ export async function fetchLiveAdminStats() {
 export async function fetchDetailedHealth() {
   let res: Response;
   try {
-    res = await adminFetch(`${getBase()}/health/detailed`, { cache: "no-store" }, 8000);
+    res = await adminFetch(`${getBase()}/health/detailed`, { cache: "no-store" }, 20000);
   } catch {
     return null;
   }
