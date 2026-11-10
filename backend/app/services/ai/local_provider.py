@@ -293,16 +293,41 @@ class LocalAIProvider(AIProvider):
             reg_url = urls[0] if urls else None
 
         category = "Other"
-        for kw in ["hackathon", "scholarship", "fellowship", "conference", "workshop", "seminar", "internship", "startup program"]:
+        for kw, label in (
+            ("hackathon", "Hackathon"),
+            ("scholarship", "Scholarship"),
+            ("fellowship", "Fellowship"),
+            ("conference", "Conference"),
+            ("workshop", "Workshop"),
+            ("seminar", "Seminar"),
+            ("internship", "Internship"),
+            ("startup program", "Startup Program"),
+            ("bootcamp", "Training"),
+            ("training", "Training"),
+        ):
             if kw in full_lower:
-                category = kw.title()
+                category = label
                 break
+
+        deadline = None
+        deadline_match = re.search(
+            r"(?:deadline|closes|closing|last date|apply by)(?:\s+(?:is|extended to|till|until))?[:\s]+(\d{1,2}(?:st|nd|rd|th)?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4})",
+            full_corpus,
+            re.IGNORECASE,
+        )
+        if deadline_match:
+            try:
+                import dateutil.parser
+                deadline = dateutil.parser.parse(deadline_match.group(1)).date().isoformat()
+            except Exception:
+                deadline = None
 
         return GeminiExtractionOutput(
             is_opportunity=True,
             title=title[:200],
             category=category,
             target_audience=[],
+            registration_deadline=deadline,
             registration_url=reg_url,
             confidence_score=0.85,
             verification_status="needs_review",

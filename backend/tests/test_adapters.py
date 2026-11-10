@@ -53,6 +53,48 @@ async def test_website_adapter_parsing():
 
 
 @pytest.mark.asyncio
+async def test_website_adapter_prefers_program_courses_over_faq_cards():
+    """PSEB-style course cards must be crawled even when FAQ blocks also match."""
+    sample_html = """
+    <html><body>
+        <div class="faq-item">
+            <h3>Is there any fee to join?</h3>
+            <a href="/register">Register</a>
+            <p>No fee for this training program.</p>
+        </div>
+        <div class="faq-item">
+            <h3>What is this program?</h3>
+            <p>A funded training course for graduates.</p>
+        </div>
+        <article class="prog">
+            <h3>Artificial Intelligence</h3>
+            <p>A 12-week bootcamp.</p>
+            <span class="pdate">Apply by <b>15 Nov 2026</b></span>
+            <a href="https://bootcamps.techdestination.com/programs/AI">View details</a>
+        </article>
+        <article class="prog">
+            <h3>UI/UX</h3>
+            <p>A 12-week design bootcamp.</p>
+            <span class="pdate">Apply by <b>15 Nov 2026</b></span>
+            <a href="https://bootcamps.techdestination.com/programs/UIUX">View details</a>
+        </article>
+    </body></html>
+    """
+    adapter = WebsiteAdapter(source_id="src-pseb", source_url="https://bootcamps.techdestination.com/")
+    with patch.object(adapter, "_fetch_html", return_value=(sample_html, 200, {})):
+        items = await adapter.fetch_items()
+
+    titles = [item.title_raw for item in items]
+    assert titles == ["Artificial Intelligence", "UI/UX"]
+    assert items[0].canonical_url.endswith("/programs/AI")
+    assert "Registration deadline: 15 Nov 2026" in items[0].body_raw
+    assert items[0].published_at is not None
+    assert items[0].published_at.year == 2026
+    assert items[0].published_at.month == 11
+    assert items[0].published_at.day == 15
+
+
+@pytest.mark.asyncio
 async def test_api_adapter_parsing():
     sample_json = [
         {

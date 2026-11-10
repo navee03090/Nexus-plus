@@ -144,6 +144,15 @@ class WebsiteAdapter(BaseSourceAdapter):
                 if links and len(text) > 15 and not tr.find("th"):
                     notice_rows.append(tr)
 
+            # Program portals (PSEB bootcamps and similar) list each course as
+            # <article class="prog">. Those classes do not match the generic card
+            # words below, and FAQ blocks do, so the courses were skipped.
+            program_cards = [
+                node for node in soup.select("article.prog")
+                if node.find("a", href=re.compile(r"/programs/", re.I))
+            ]
+            min_title_len = 2 if program_cards else 6
+
             # 2. Strategy B: Structured Announcement Cards / Containers
             card_containers = soup.find_all(
                 ["article", "section", "div", "li"],
@@ -164,6 +173,9 @@ class WebsiteAdapter(BaseSourceAdapter):
                     headings = main_el.find_all(["h2", "h3", "h4"])
                     candidates = [h.parent for h in headings if h.find("a") or h.find_next("a")]
 
+            if program_cards:
+                candidates = program_cards
+
             seen_urls = set()
             max_items = max(1, settings.CRAWL_MAX_ITEMS)
             for idx, c in enumerate(candidates[: max_items * 3]):
@@ -172,7 +184,7 @@ class WebsiteAdapter(BaseSourceAdapter):
                 if not title_tag:
                     continue
                 title_text = title_tag.get_text(strip=True)
-                if not title_text or len(title_text) < 6:
+                if not title_text or len(title_text) < min_title_len:
                     continue
 
                 # Filter out navigation links (e.g. "Home", "Contact Us", "Login")
@@ -195,6 +207,13 @@ class WebsiteAdapter(BaseSourceAdapter):
 
                 # Extract body text
                 body_text = sanitize_text(c.get_text(separator=" ", strip=True))
+                apply_by = re.search(
+                    r"\bapply by\s+(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\b",
+                    body_text,
+                    re.I,
+                )
+                if apply_by and "deadline" not in body_text.lower():
+                    body_text = f"{body_text} Registration deadline: {apply_by.group(1)}."
 
                 # Extract date if present
                 pub_date = None
@@ -206,7 +225,10 @@ class WebsiteAdapter(BaseSourceAdapter):
                         pass
                 if not pub_date:
                     # Regex match dates like "Oct 24, 2026", "24-10-2026", "24th October 2026"
-                    date_match = re.search(r"\b(\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\w+\s+\d{1,2},?\s+\d{4})\b", body_text)
+                    date_match = re.search(
+                        r"\b(\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}|\w+\s+\d{1,2},?\s+\d{4})\b",
+                        body_text,
+                    )
                     if date_match:
                         try:
                             pub_date = dateutil.parser.parse(date_match.group(1))
