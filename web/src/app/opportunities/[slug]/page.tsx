@@ -52,6 +52,7 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
   const relatedPool = await fetchOpportunities({
     category: opportunity.category_slug || undefined,
     limit: 12,
+    includePast: true,
   });
   const related = prepareListings(relatedPool)
     .filter((o) => o.id !== opportunity.id && o.slug !== opportunity.slug)

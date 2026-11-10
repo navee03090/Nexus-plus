@@ -154,7 +154,7 @@ export async function fetchOpportunityBySlug(slug: string): Promise<Opportunity 
 export async function searchOpportunities(q: string): Promise<Opportunity[]> {
   const qLower = q.toLowerCase();
   try {
-    const live = await fetchPublishedFromSupabase({ limit: 50 });
+    const live = await fetchPublishedFromSupabase({ limit: 50, includePast: true });
     if (live.length > 0) {
       return live.filter(
         (o) =>
@@ -184,7 +184,7 @@ export async function searchOpportunities(q: string): Promise<Opportunity[]> {
 
 export async function fetchRecommended(): Promise<Opportunity[]> {
   try {
-    const live = await fetchPublishedFromSupabase({ limit: 6, featuredFirst: true });
+    const live = await fetchPublishedFromSupabase({ limit: 6, featuredFirst: true, includePast: true });
     if (live.length > 0) return live;
   } catch {
     // Render is the next fallback

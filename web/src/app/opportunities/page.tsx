@@ -42,11 +42,9 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
     urgency = "",
     sort = "newest",
     page: pageRaw = "1",
-    past = "",
   } = searchParams;
 
   const page = Math.max(1, parseInt(pageRaw, 10) || 1);
-  const showPast = past === "1" || past === "true";
   const queryLower = q.trim();
 
   const [pool, categories] = await Promise.all([
@@ -83,7 +81,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
     }
   }
 
-  const prepared = prepareListings(filtered, { showPast, sort });
+  const prepared = prepareListings(filtered, { sort });
   const paged = paginate(prepared, page, PAGE_SIZE);
   const items = paged.items;
   const meta = paged.meta;
@@ -95,7 +93,6 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
     online: online || undefined,
     urgency: urgency || undefined,
     sort: sort !== "newest" ? sort : undefined,
-    past: showPast ? "1" : undefined,
   };
 
   const hrefForPage = (p: number) =>

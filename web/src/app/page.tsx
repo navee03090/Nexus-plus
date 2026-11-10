@@ -6,20 +6,21 @@ import { ClosingSoonRail } from "@/components/ClosingSoonRail";
 import { HomeChrome, LivePill } from "@/components/HomeChrome";
 import { PakistanMap } from "@/components/PakistanMap";
 import { fetchOpportunities, fetchAdminStats, fetchCategories } from "@/lib/api";
-import { closesWithinDays, prepareListings } from "@/lib/opportunityDisplay";
+import { closesWithinDays, isExpired, prepareListings } from "@/lib/opportunityDisplay";
 import { MAP_CITIES } from "@/lib/mapCities";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
   const [opportunities, stats, categories] = await Promise.all([
-    fetchOpportunities({ limit: 50 }),
+    fetchOpportunities({ limit: 50, includePast: true }),
     fetchAdminStats(),
     fetchCategories(),
   ]);
 
-  const liveListings = prepareListings(opportunities);
-  const closingSoon = liveListings
+  const listings = prepareListings(opportunities);
+  const openListings = listings.filter((item) => !isExpired(item));
+  const closingSoon = openListings
     .filter((item) => closesWithinDays(item, 7))
     .sort(
       (a, b) =>
@@ -27,7 +28,7 @@ export default async function HomePage() {
     );
   const statItems = [
     { value: stats.sources_monitored ?? 0, label: "Sources monitored", colorClass: "text-np-accent" },
-    { value: liveListings.length, label: "Live opportunities", colorClass: "text-np-accent" },
+    { value: openListings.length, label: "Live opportunities", colorClass: "text-np-accent" },
     { value: closingSoon.length, label: "Closing this week", colorClass: "text-np-accent" },
     {
       value: stats.organizations_listed ?? stats.source_links ?? 0,
@@ -44,17 +45,17 @@ export default async function HomePage() {
   }
 
   const cityCounts = Object.fromEntries(MAP_CITIES.map((city) => [city.name, 0])) as Record<string, number>;
-  for (const item of liveListings) {
+  for (const item of listings) {
     const city = (item.city || "").trim().toLowerCase();
     const match = MAP_CITIES.find((entry) => entry.name.toLowerCase() === city);
     if (match) cityCounts[match.name] += 1;
   }
 
-  const featured = liveListings.slice(0, 6);
+  const featured = listings.slice(0, 6);
 
   return (
     <HomeChrome
-      pill={<LivePill count={liveListings.length} />}
+      pill={<LivePill count={openListings.length} />}
       map={<PakistanMap counts={cityCounts} />}
       stats={<StatsCounters items={statItems} />}
       closing={<ClosingSoonRail items={closingSoon.slice(0, 8)} />}
@@ -70,7 +71,7 @@ export default async function HomePage() {
       listings={
         featured.length === 0 ? (
           <div className="np-panel py-16 text-center">
-            <p className="text-sm text-np-muted">No active opportunities found yet. Check back soon.</p>
+            <p className="text-sm text-np-muted">No opportunities found yet. Check back soon.</p>
           </div>
         ) : (
           <OpportunityGrid items={featured} />

@@ -69,7 +69,7 @@ export function ExploreFilters({ categories }: { categories: Category[] }) {
   const visible = categories.slice(0, 6);
   const overflow = categories.slice(6);
   const overflowActive = overflow.some((category) => category.slug === query.category);
-  const activeCount = [query.category, query.city, query.online, query.urgency, query.past].filter(Boolean).length;
+  const activeCount = [query.category, query.city, query.online, query.urgency].filter(Boolean).length;
 
   const extraFilters = (
     <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -103,14 +103,6 @@ export function ExploreFilters({ categories }: { categories: Category[] }) {
         onClick={() => setFilters({ urgency: query.urgency === "urgent" ? null : "urgent" })}
       >
         Closing soon
-      </button>
-      <button
-        type="button"
-        aria-pressed={query.past === "1"}
-        className={toggleClass(query.past === "1", "neutral")}
-        onClick={() => setFilters({ past: query.past === "1" ? null : "1" })}
-      >
-        Show past
       </button>
       <span className="ml-1 text-np-faint">Sort:</span>
       {[

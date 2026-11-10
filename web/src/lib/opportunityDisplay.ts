@@ -94,13 +94,8 @@ export function prepareListings(
   items: Opportunity[],
   options?: { showPast?: boolean; sort?: SortKey }
 ): Opportunity[] {
-  const showPast = options?.showPast ?? false;
   const sort = options?.sort || "newest";
-  const clean = items.filter(isDisplayable);
-  const active = clean.filter((item) => !isExpired(item)).sort((a, b) => compare(a, b, sort));
-  if (!showPast) return active;
-  const past = clean.filter((item) => isExpired(item)).sort((a, b) => compare(a, b, sort));
-  return [...active, ...past];
+  return items.filter(isDisplayable).sort((a, b) => compare(a, b, sort));
 }
 
 export function paginate<T>(items: T[], page: number, pageSize: number) {
