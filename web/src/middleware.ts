@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
   loginUrl.pathname = "/admin/login";
   loginUrl.search = "";
 
-  if (pathname === "/admin/login") {
+  if (pathname === "/admin/login" || pathname === "/admin/reset") {
     if (email) {
       const home = request.nextUrl.clone();
       home.pathname = "/admin";
