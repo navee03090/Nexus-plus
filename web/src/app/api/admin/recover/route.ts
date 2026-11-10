@@ -38,6 +38,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    message: "Check your inbox for a link to choose your password.",
+    message: "Check your inbox and open the new link on this computer. An older link will not work.",
   });
 }

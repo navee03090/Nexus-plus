@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -9,7 +9,18 @@ import { TopProgress } from "@/components/TopProgress";
 import { CommandPalette } from "@/components/CommandPalette";
 
 export function SiteFrame({ children }: { children: React.ReactNode }) {
-  const admin = usePathname().startsWith("/admin");
+  const pathname = usePathname();
+  const admin = pathname.startsWith("/admin");
+
+  useEffect(() => {
+    if (pathname.startsWith("/admin/reset")) return;
+    const hash = window.location.hash;
+    if (!hash) return;
+    if (/access_token=|refresh_token=|error_code=|type=(signup|magiclink|recovery|email)/.test(hash)) {
+      window.location.replace(`/admin/reset${hash}`);
+    }
+  }, [pathname]);
+
   return (
     <>
       {admin ? null : <TopProgress />}

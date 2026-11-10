@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -40,6 +41,35 @@ export default function AdminResetPage() {
     };
 
     const load = async () => {
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const errorCode = hash.get("error_code");
+      if (errorCode) {
+        if (!active) return;
+        claimed = true;
+        setNotice("");
+        setErrorMsg(
+          errorCode === "otp_expired"
+            ? "This email link has expired. Send a new link from the admin sign-in page, then open that new email on this computer."
+            : "This email link could not be used. Send a new one from the admin sign-in page."
+        );
+        window.history.replaceState({}, "", "/admin/reset");
+        return;
+      }
+      const accessToken = hash.get("access_token");
+      const refreshToken = hash.get("refresh_token");
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error && active) {
+          claimed = true;
+          setNotice("");
+          setErrorMsg("This email link could not be used. Send a new one from the admin sign-in page.");
+          return;
+        }
+      }
+
       const code = new URLSearchParams(window.location.search).get("code");
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -126,6 +156,13 @@ export default function AdminResetPage() {
           <div className="rounded-np border border-np-danger/30 bg-np-danger/10 p-3 text-xs text-np-danger">{errorMsg}</div>
         ) : null}
         {notice ? <p className="text-center text-sm text-np-muted">{notice}</p> : null}
+        {errorMsg && !ready ? (
+          <p className="text-center">
+            <Link href="/admin/login" className="text-sm font-semibold text-np-accent">
+              Back to admin sign in
+            </Link>
+          </p>
+        ) : null}
 
         {ready ? (
           <form onSubmit={savePassword} className="np-panel space-y-4 p-6 sm:p-8">
