@@ -11,6 +11,7 @@ import {
   ArrowUpRight,
   BadgeCheck,
   Sparkles,
+  XCircle,
 } from "lucide-react";
 import { Opportunity } from "@/types";
 import { UrgencyBadge } from "./UrgencyBadge";
@@ -63,9 +64,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
 
   return (
     <article
-      className={`group relative flex h-full flex-col overflow-hidden rounded-np-lg border border-white/[0.07] bg-np-surface transition-[transform,border-color,opacity] duration-200 hover:-translate-y-0.5 hover:border-np-accent/45 ${
-        expired ? "opacity-60 hover:opacity-80" : ""
-      }`}
+      className="group relative flex h-full flex-col overflow-hidden rounded-np-lg border border-white/[0.07] bg-np-surface transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-np-accent/45"
       style={{ viewTransitionName: `card-${opportunity.slug}` }}
     >
       <div className="h-28 shrink-0">
@@ -87,17 +86,11 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
             <span className="rounded-full border border-np-accent/25 bg-np-accent/15 px-2 py-0.5 text-[11px] font-semibold text-np-accent">
               {opportunity.category_name || "Opportunity"}
             </span>
-            {expired ? (
-              <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-np-faint">
-                Closed
-              </span>
-            ) : (
-              <UrgencyBadge
-                urgency={opportunity.deadline_urgency}
-                label={opportunity.deadline_label}
-                deadline={opportunity.registration_deadline}
-              />
-            )}
+            <UrgencyBadge
+              urgency={expired ? "expired" : opportunity.deadline_urgency}
+              label={expired ? "Deadline passed" : opportunity.deadline_label}
+              deadline={opportunity.registration_deadline}
+            />
             {showMatchScore && opportunity.match_score ? (
               <span className="inline-flex items-center gap-1 rounded-full border border-np-accent/25 bg-np-accent/10 px-2 py-0.5 text-[11px] font-semibold text-np-accent">
                 <Sparkles className="h-3 w-3" />
@@ -140,7 +133,15 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
         ) : null}
 
         <div className="mt-auto space-y-2 text-sm text-np-muted">
-          {when ? (
+          {expired && deadline ? (
+            <div className="flex items-center gap-2 text-np-danger">
+              <XCircle className="h-3.5 w-3.5 shrink-0" />
+              <span>
+                Deadline passed
+                <span className="ml-1.5 font-medium tabular-nums text-np-faint line-through">{when}</span>
+              </span>
+            </div>
+          ) : when ? (
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 shrink-0 text-np-faint" />
               <span className="tabular-nums">

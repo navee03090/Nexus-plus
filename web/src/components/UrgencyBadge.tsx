@@ -33,6 +33,22 @@ export const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({
   }
 
   const normalized = (urgency || "").toLowerCase();
+  const deadlinePassed =
+    normalized === "closed" ||
+    normalized === "expired" ||
+    (Boolean(deadline) && new Date(deadline as string).getTime() < Date.now());
+
+  if (deadlinePassed) {
+    return (
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-np-danger/10 text-np-danger border border-np-danger/30 ${className}`}
+      >
+        <XCircle className="w-3 h-3" />
+        Deadline passed
+      </span>
+    );
+  }
+
   const noDeadline =
     !deadline &&
     (normalized === "rolling" ||
@@ -66,17 +82,6 @@ export const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({
         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-np-warn/10 text-np-warn border border-np-warn/30 ${className}`}
       >
         <Clock className="w-3 h-3" />
-        {displayLabel}
-      </span>
-    );
-  }
-
-  if (normalized === "closed" || normalized === "expired") {
-    return (
-      <span
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-np-surface-2 text-np-faint border border-np-border ${className}`}
-      >
-        <XCircle className="w-3 h-3" />
         {displayLabel}
       </span>
     );

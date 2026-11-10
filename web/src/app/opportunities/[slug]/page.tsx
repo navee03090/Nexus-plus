@@ -25,6 +25,7 @@ import { FlyerImage } from "@/components/FlyerImage";
 import { OpportunityActionButtons } from "./OpportunityActionButtons";
 import {
   displayDescription,
+  isExpired,
   knownOrganizer,
   locationLabel,
   meaningful,
@@ -60,6 +61,7 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
   const body = displayDescription(opportunity);
   const organizer = knownOrganizer(opportunity.organization_name);
   const place = locationLabel(opportunity);
+  const expired = isExpired(opportunity);
 
   return (
     <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1 ${opportunity.registration_url ? "pb-24 lg:pb-10" : ""}`}>
@@ -81,8 +83,8 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
                 {opportunity.category_name || "Opportunity"}
               </span>
               <UrgencyBadge
-                urgency={opportunity.deadline_urgency}
-                label={opportunity.deadline_label}
+                urgency={expired ? "expired" : opportunity.deadline_urgency}
+                label={expired ? "Deadline passed" : opportunity.deadline_label}
                 deadline={opportunity.registration_deadline}
               />
               <VerificationBadge
@@ -99,6 +101,15 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
             >
               {opportunity.title}
             </h1>
+
+            {expired ? (
+              <p className="rounded-np border border-np-danger/30 bg-np-danger/10 px-3 py-2.5 text-sm leading-relaxed text-np-danger">
+                {opportunity.registration_deadline
+                  ? `Deadline passed on ${formatDate(opportunity.registration_deadline)}. `
+                  : "Deadline passed. "}
+                This listing stays here so you can see what it was.
+              </p>
+            ) : null}
 
             {organizer ? (
               <div className="flex items-center gap-2 pt-1 text-sm text-np-muted">
@@ -312,9 +323,9 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
                 href={opportunity.registration_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full np-btn-primary py-3.5 text-sm shadow-np"
+                className={`w-full py-3.5 text-sm ${expired ? "np-btn-secondary" : "np-btn-primary shadow-np"}`}
               >
-                <span>Register / Apply</span>
+                <span>{expired ? "Official announcement" : "Register / Apply"}</span>
                 <ExternalLink className="w-4 h-4" />
               </a>
             ) : (
@@ -328,11 +339,17 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
             <div className="pt-4 border-t border-np-border space-y-3.5 text-sm">
               {opportunity.registration_deadline ? (
                 <div className="flex items-start justify-between gap-3">
-                  <span className="text-np-muted flex items-center gap-1.5 shrink-0">
-                    <Clock className="w-4 h-4 text-np-accent" />
-                    <span>Deadline</span>
+                  <span
+                    className={`flex items-center gap-1.5 shrink-0 ${expired ? "font-semibold text-np-danger" : "text-np-muted"}`}
+                  >
+                    <Clock className={`w-4 h-4 ${expired ? "text-np-danger" : "text-np-accent"}`} />
+                    <span>{expired ? "Deadline passed" : "Deadline"}</span>
                   </span>
-                  <span className="font-semibold text-np-text text-right tabular-nums">
+                  <span
+                    className={`text-right tabular-nums ${
+                      expired ? "font-medium text-np-faint line-through" : "font-semibold text-np-text"
+                    }`}
+                  >
                     {formatDate(opportunity.registration_deadline)}
                   </span>
                 </div>
@@ -416,14 +433,14 @@ export default async function OpportunityDetailPage({ params }: OpportunityDetai
 
       {/* Mobile sticky apply */}
       {opportunity.registration_url && (
-        <div className="lg:hidden fixed bottom-0 inset-x-0 z-30 border-t border-np-border bg-np-bg/95 backdrop-blur-md p-3">
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-30 border-t border-np-border bg-np-bg p-3">
           <a
             href={opportunity.registration_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full np-btn-primary py-3"
+            className={`w-full py-3 ${expired ? "np-btn-secondary" : "np-btn-primary"}`}
           >
-            <span>Register / Apply</span>
+            <span>{expired ? "Official announcement" : "Register / Apply"}</span>
             <ExternalLink className="w-4 h-4" />
           </a>
         </div>
