@@ -1,23 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Compass, Menu, Search, X } from "lucide-react";
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [compact, setCompact] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const exploreActive = pathname.startsWith("/opportunities");
-
-  useEffect(() => {
-    const onScroll = () => setCompact(window.scrollY > 12);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   const openCommand = () => {
     const event = new CustomEvent("np-command", { cancelable: true });
@@ -27,12 +19,10 @@ export const Navbar: React.FC = () => {
 
   return (
     <header
-      className={`sticky top-0 z-40 w-full border-b border-white/[0.07] ${
-        compact ? "bg-np-bg/80 backdrop-blur-md" : "bg-np-bg"
-      }`}
+      className="sticky top-0 z-40 w-full border-b border-white/[0.07] bg-np-bg"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className={`flex items-center justify-between gap-4 ${compact ? "h-14" : "h-16"}`}>
+        <div className="flex h-16 items-center justify-between gap-4">
           <Link href="/" className="flex min-w-0 items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-np border border-white/10 bg-np-surface text-sm font-bold tracking-tight text-np-accent">
               NP

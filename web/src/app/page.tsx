@@ -1,9 +1,9 @@
-import React, { Suspense, cache } from "react";
+import React from "react";
 import Link from "next/link";
 import { OpportunityGrid } from "@/components/OpportunityGrid";
 import { StatsCounters } from "@/components/StatsCounters";
 import { ClosingSoonRail } from "@/components/ClosingSoonRail";
-import { HomeChrome, LivePill, MapFrame, StatsPlaceholder } from "@/components/HomeChrome";
+import { HomeChrome, LivePill } from "@/components/HomeChrome";
 import { PakistanMap } from "@/components/PakistanMap";
 import { fetchOpportunities, fetchAdminStats, fetchCategories } from "@/lib/api";
 import { closesWithinDays, prepareListings } from "@/lib/opportunityDisplay";
@@ -11,7 +11,7 @@ import { MAP_CITIES } from "@/lib/mapCities";
 
 export const revalidate = 60;
 
-const loadHome = cache(async () => {
+export default async function HomePage() {
   const [opportunities, stats, categories] = await Promise.all([
     fetchOpportunities({ limit: 50 }),
     fetchAdminStats(),
@@ -50,110 +50,31 @@ const loadHome = cache(async () => {
     if (match) cityCounts[match.name] += 1;
   }
 
-  return {
-    liveCount: liveListings.length,
-    featured: liveListings.slice(0, 6),
-    closingSoon: closingSoon.slice(0, 8),
-    statItems,
-    cityCounts,
-    categories,
-  };
-});
+  const featured = liveListings.slice(0, 6);
 
-async function LiveCount() {
-  const { liveCount } = await loadHome();
-  return <LivePill count={liveCount} />;
-}
-
-async function HomeMap() {
-  const { cityCounts } = await loadHome();
-  return <PakistanMap counts={cityCounts} />;
-}
-
-async function HomeStats() {
-  const { statItems } = await loadHome();
-  return <StatsCounters items={statItems} />;
-}
-
-async function HomeClosing() {
-  const { closingSoon } = await loadHome();
-  return <ClosingSoonRail items={closingSoon} />;
-}
-
-async function HomeCategories() {
-  const { categories } = await loadHome();
-  return (
-    <div className="flex items-center gap-2.5 overflow-x-auto pb-2">
-      {categories.map((cat) => (
-        <Link key={cat.id} href={`/opportunities?category=${cat.slug}`} className="np-chip shrink-0 whitespace-nowrap">
-          {cat.name}
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-async function HomeListings() {
-  const { featured } = await loadHome();
-  if (featured.length === 0) {
-    return (
-      <div className="np-panel py-16 text-center">
-        <p className="text-sm text-np-muted">No active opportunities found yet. Check back soon.</p>
-      </div>
-    );
-  }
-  return <OpportunityGrid items={featured} />;
-}
-
-function ListingFrame() {
-  return (
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
-      {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className="overflow-hidden rounded-np-lg border border-white/[0.07] bg-np-surface">
-          <div className="h-28 border-b border-white/[0.07] bg-np-surface-2" />
-          <div className="space-y-3 p-5">
-            <div className="h-3 w-24 rounded-full bg-np-surface-2" />
-            <div className="h-4 w-full rounded bg-np-surface-2" />
-            <div className="h-4 w-2/3 rounded bg-np-surface-2" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export default function HomePage() {
   return (
     <HomeChrome
-      pill={
-        <Suspense fallback={<LivePill />}>
-          <LiveCount />
-        </Suspense>
-      }
-      map={
-        <Suspense fallback={<MapFrame />}>
-          <HomeMap />
-        </Suspense>
-      }
-      stats={
-        <Suspense fallback={<StatsPlaceholder />}>
-          <HomeStats />
-        </Suspense>
-      }
-      closing={
-        <Suspense fallback={null}>
-          <HomeClosing />
-        </Suspense>
-      }
+      pill={<LivePill count={liveListings.length} />}
+      map={<PakistanMap counts={cityCounts} />}
+      stats={<StatsCounters items={statItems} />}
+      closing={<ClosingSoonRail items={closingSoon.slice(0, 8)} />}
       categories={
-        <Suspense fallback={<div className="h-9" />}>
-          <HomeCategories />
-        </Suspense>
+        <div className="flex items-center gap-2.5 overflow-x-auto pb-2">
+          {categories.map((cat) => (
+            <Link key={cat.id} href={`/opportunities?category=${cat.slug}`} className="np-chip shrink-0 whitespace-nowrap">
+              {cat.name}
+            </Link>
+          ))}
+        </div>
       }
       listings={
-        <Suspense fallback={<ListingFrame />}>
-          <HomeListings />
-        </Suspense>
+        featured.length === 0 ? (
+          <div className="np-panel py-16 text-center">
+            <p className="text-sm text-np-muted">No active opportunities found yet. Check back soon.</p>
+          </div>
+        ) : (
+          <OpportunityGrid items={featured} />
+        )
       }
     />
   );
