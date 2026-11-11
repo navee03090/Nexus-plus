@@ -117,6 +117,63 @@ class WebsiteAdapter(BaseSourceAdapter):
                 "sample_images": [],
             }
 
+    def _report(self, label: str, done: bool = False) -> None:
+        report = getattr(self, "report_progress", None)
+        if report:
+            report(label, done)
+
+    async def _read_program_page(self, url: str) -> Optional[Dict[str, str]]:
+        """Read one course page. Returns None when the page is not a course."""
+        fetch_res = await self._fetch_html(url, use_cache=False)
+        html = fetch_res[0]
+        status_code = fetch_res[1]
+        if status_code == 304 or not html:
+            return None
+        soup = BeautifulSoup(html, "html.parser")
+        heading = soup.find("h1")
+        title = heading.get_text(strip=True) if heading else ""
+        if not title:
+            return None
+
+        prose = soup.select_one(".prose-desc") or soup.select_one("p.lede")
+        description = sanitize_text(prose.get_text(" ", strip=True)) if prose else ""
+        facts: Dict[str, str] = {}
+        for row in soup.select("ul.facts li"):
+            label_el = row.find("span")
+            value_el = row.find("b")
+            if label_el and value_el:
+                facts[label_el.get_text(strip=True).lower()] = sanitize_text(value_el.get_text(" ", strip=True))
+
+        eligibility_bits = [sanitize_text(node.get_text(" ", strip=True)) for node in soup.select(".elig")]
+        eligibility = " ".join(bit for bit in eligibility_bits if bit)
+
+        register = ""
+        apply_link = soup.select_one("a.cta[href]")
+        if apply_link and apply_link.get("href"):
+            register = urljoin(url, apply_link["href"].strip())
+
+        parts = [f"Title: {title}."]
+        if facts.get("deadline"):
+            parts.append(f"Registration deadline: {facts['deadline']}.")
+        if facts.get("starts"):
+            parts.append(f"Starts: {facts['starts']}.")
+        if facts.get("duration"):
+            parts.append(f"Duration: {facts['duration']}.")
+        if facts.get("status"):
+            parts.append(f"Status: {facts['status']}.")
+        if eligibility:
+            parts.append(f"Eligibility: {eligibility}.")
+        if register:
+            parts.append(f"Apply: {register}.")
+        if description:
+            parts.append(description)
+        return {
+            "title": title,
+            "body": " ".join(parts),
+            "deadline": facts.get("deadline", ""),
+            "register": register,
+        }
+
     async def fetch_items(self) -> List[RawEvidenceItem]:
         """
         Crawls the target portal, identifies announcement notices, extracts attached
@@ -207,6 +264,20 @@ class WebsiteAdapter(BaseSourceAdapter):
 
                 # Extract body text
                 body_text = sanitize_text(c.get_text(separator=" ", strip=True))
+                if program_cards and re.search(r"/programs/[^/#?]+", canonical_link, re.I):
+                    self._report(f"Opening course page: {title_text}")
+                    try:
+                        course = await self._read_program_page(canonical_link)
+                    except Exception as course_err:
+                        logger.warning(f"Course page {canonical_link} could not be read: {course_err}")
+                        course = None
+                    if course:
+                        title_text = course["title"] or title_text
+                        body_text = course["body"] or body_text
+                        self._report(f"Opened course page: {title_text}", done=True)
+                    else:
+                        self._report(f"Course page unavailable, using the card: {title_text}", done=True)
+
                 apply_by = re.search(
                     r"\bapply by\s+(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\b",
                     body_text,

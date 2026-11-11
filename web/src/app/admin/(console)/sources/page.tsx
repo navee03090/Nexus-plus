@@ -22,7 +22,8 @@ import {
   Layers,
   Zap
 } from "lucide-react";
-import { testSourceCrawl, triggerSourceCrawl, createAdminSource, triggerApifyScrape, syncApifyRun, checkApifyRunStatus, fetchAdminSources } from "@/lib/api";
+import { testSourceCrawl, triggerSourceCrawl, fetchCrawlProgress, createAdminSource, triggerApifyScrape, syncApifyRun, checkApifyRunStatus, fetchAdminSources } from "@/lib/api";
+import type { CrawlProgress } from "@/lib/api";
 import { signalBusy } from "@/components/TopProgress";
 
 function mapSourceRow(bs: any) {
@@ -135,6 +136,7 @@ export default function SourcesPage() {
   // Live crawl triggering state
   const [crawlingId, setCrawlingId] = useState<string | null>(null);
   const [crawlFeedback, setCrawlFeedback] = useState<{ [id: string]: string }>({});
+  const [crawlRuns, setCrawlRuns] = useState<{ [id: string]: CrawlProgress }>({});
 
   // Add Source Modal State
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -234,25 +236,63 @@ export default function SourcesPage() {
 
   const handleCrawlNow = async (sourceId: string) => {
     setCrawlingId(sourceId);
-    setCrawlFeedback((prev) => ({ ...prev, [sourceId]: "Crawling..." }));
+    setCrawlFeedback((prev) => ({ ...prev, [sourceId]: "Starting..." }));
+    setCrawlRuns((prev) => ({
+      ...prev,
+      [sourceId]: { status: "running", current: "Starting", steps: [] },
+    }));
     signalBusy(true, "Crawling");
+    let settled = false;
+    const applySnapshot = (snap: CrawlProgress) => {
+      setCrawlRuns((prev) => ({ ...prev, [sourceId]: snap }));
+      if (snap.current) {
+        setCrawlFeedback((prev) => ({ ...prev, [sourceId]: snap.current }));
+      }
+      const done = snap.status === "success" || snap.status === "failed";
+      if (!done) return;
+      settled = true;
+      const data = snap.result || {};
+      if (snap.status === "failed") {
+        setCrawlFeedback((prev) => ({
+          ...prev,
+          [sourceId]: `⚠ ${data.error || "Crawl failed"}`,
+        }));
+        return;
+      }
+      const found = data.items_found || 0;
+      const pub = data.items_published || 0;
+      const dup = data.items_duplicated || 0;
+      const skipped = data.items_skipped_stale || 0;
+      setCrawlFeedback((prev) => ({
+        ...prev,
+        [sourceId]: `✓ Done: ${found} found, ${pub} published, ${dup} already saved, ${skipped} skipped`,
+      }));
+      setSources((prev) =>
+        prev.map((s) => (s.id === sourceId ? { ...s, last_checked_at: "Just now" } : s))
+      );
+    };
+    const timer = window.setInterval(async () => {
+      const snap = await fetchCrawlProgress(sourceId);
+      if (snap) applySnapshot(snap);
+    }, 1200);
     try {
       const res = await triggerSourceCrawl(sourceId);
-      if (res.success && res.data) {
-        const found = res.data.items_found || 0;
-        const pub = res.data.items_published || 0;
-        const dup = res.data.items_duplicated || 0;
+      if (!res.success) {
+        settled = true;
         setCrawlFeedback((prev) => ({
           ...prev,
-          [sourceId]: `✓ Done: ${found} found, ${pub} published, ${dup} duplicates`,
+          [sourceId]: `⚠ ${res.error || "Crawl could not start"}`,
         }));
-        setSources((prev) =>
-          prev.map((s) => (s.id === sourceId ? { ...s, last_checked_at: "Just now" } : s))
-        );
-      } else {
+        return;
+      }
+      const started = Date.now();
+      while (!settled && Date.now() - started < 15 * 60 * 1000) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1200));
+      }
+      if (!settled) {
         setCrawlFeedback((prev) => ({
           ...prev,
-          [sourceId]: `⚠ ${res.error || "Crawl completed"}`,
+          [sourceId]: "⚠ The crawl is still running. Refresh this page in a minute.",
         }));
       }
     } catch (err: any) {
@@ -261,6 +301,7 @@ export default function SourcesPage() {
         [sourceId]: `⚠ Failed: ${err.message}`,
       }));
     } finally {
+      window.clearInterval(timer);
       setCrawlingId(null);
       signalBusy(false);
     }
@@ -730,6 +771,22 @@ export default function SourcesPage() {
                       <div className="text-[10px] text-np-accent mt-1 font-mono text-right animate-fadeIn">
                         {crawlFeedback[src.id]}
                       </div>
+                    )}
+                    {crawlRuns[src.id]?.steps?.length > 0 && (
+                      <ol className="mt-2 ml-auto max-h-40 w-64 overflow-y-auto rounded-lg border border-np-border bg-np-bg/80 px-2 py-1.5 text-left">
+                        {crawlRuns[src.id].steps.map((step, index) => (
+                          <li key={`${step.label}-${index}`} className="flex items-start justify-between gap-2 py-0.5 text-[10px] font-mono text-np-muted">
+                            <span className={step.state === "active" ? "text-np-accent" : "text-np-muted"}>
+                              {step.state === "active" ? "…" : "✓"} {step.label}
+                            </span>
+                            <span className="shrink-0 text-np-faint">
+                              {step.seconds >= 60
+                                ? `${Math.floor(step.seconds / 60)}m ${Math.round(step.seconds % 60)}s`
+                                : `${step.seconds}s`}
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
                     )}
                   </td>
                 </tr>

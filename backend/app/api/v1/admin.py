@@ -3,6 +3,7 @@ Admin Control Plane Endpoints (Section 37, 56, 57, 58, 59, 60, 63, 84).
 Provides verification queue, published opportunity catalog, source administration,
 live ingestion monitoring, system diagnostics, safe source testing, and audit logging.
 """
+import asyncio
 import time
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
@@ -61,6 +62,7 @@ from app.services.opportunities.admin_editor import (
 from app.schemas.source import SourceCreate, SourceTestRequest
 
 router = APIRouter(prefix="/admin", tags=["Admin Control Plane"])
+_running_crawls: set = set()
 
 
 async def _load_pending_review(db: AsyncSession, queue_id: str):
@@ -676,11 +678,37 @@ async def trigger_source_crawl(
         raise HTTPException(status_code=404, detail=f"Source '{source_id}' not found")
 
     from app.tasks.ingestion import execute_source_crawl
-    try:
-        res = await execute_source_crawl(str(source.id), db=db)
-        return {"data": res}
-    except Exception as e:
-        return {"data": {"source_id": str(source.id), "status": "failed", "error": str(e)}}
+    from app.services.ingestion.progress import crawl_progress
+    crawl_progress.begin(str(source.id), source.name, alias=source_id)
+
+    async def _run_crawl() -> None:
+        try:
+            await execute_source_crawl(str(source.id))
+        except Exception as exc:
+            crawl_progress.attach(str(source.id), {
+                "source_id": str(source.id),
+                "status": "failed",
+                "error": str(exc),
+            })
+            crawl_progress.finish(str(source.id), "failed")
+
+    task = asyncio.create_task(_run_crawl())
+    _running_crawls.add(task)
+    task.add_done_callback(_running_crawls.discard)
+    return {"data": {"source_id": str(source.id), "status": "running"}}
+
+
+@router.get("/sources/{source_id}/crawl-progress")
+async def source_crawl_progress(
+    source_id: str,
+    admin_claims: Dict[str, Any] = Depends(require_admin),
+):
+    """Live step list for the crawl that is running on this source."""
+    from app.services.ingestion.progress import crawl_progress
+    snap = crawl_progress.snapshot(source_id)
+    if not snap:
+        return {"data": {"status": "idle", "current": "", "steps": []}}
+    return {"data": snap}
 
 
 @router.get("/ingestion/runs")

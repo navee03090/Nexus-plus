@@ -22,6 +22,7 @@ from app.algorithms.rate_limiter import SourceRateLimiter
 from app.services.extraction.extractor import ExtractionPipeline
 from app.services.opportunities.resolver import OpportunityResolver
 from app.services.opportunities.recency import is_stale_announcement, is_past_opportunity
+from app.services.ingestion.progress import crawl_progress
 
 
 async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict[str, Any]:
@@ -68,7 +69,21 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
                 source_url=source.url,
                 parser_key=source.parser_key
             )
+
+            def _report(label: str, done: bool = False) -> None:
+                if done:
+                    crawl_progress.complete_open(str(source.id), label)
+                else:
+                    crawl_progress.pulse(str(source.id), label)
+
+            adapter.report_progress = _report
+            crawl_progress.pulse(str(source.id), "Reading the website")
             items = await adapter.fetch_items()
+            reading = crawl_progress.snapshot(str(source.id)) or {}
+            if reading.get("current") == "Reading the website":
+                crawl_progress.complete_open(str(source.id), f"Reading the website — {len(items)} items")
+            else:
+                crawl_progress.complete_open(str(source.id), f"Course list ready — {len(items)} items")
 
             discovered_count = len(items)
             saved_count = 0
@@ -94,6 +109,7 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
 
             # 4. Process each discovered item with deduplication & AI pipeline
             for item in items:
+                item_title = item.title_raw or "Untitled"
                 content_hash = item.content_hash
                 hash_stmt = select(SourceItem).where(
                     SourceItem.source_id == source.id,
@@ -103,13 +119,17 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
 
                 if existing_item:
                     dup_count += 1
+                    crawl_progress.complete_open(str(source.id), f"Already saved: {item_title}")
                     continue
 
                 if is_stale_announcement(item.published_at, lookback_days=settings.CRAWL_LOOKBACK_DAYS):
                     skipped_stale += 1
                     _remember_skip(item, content_hash, "stale_announcement")
                     await db.commit()
+                    crawl_progress.complete_open(str(source.id), f"Skipped, too old: {item_title}")
                     continue
+
+                crawl_progress.pulse(str(source.id), f"AI model reading: {item_title}")
 
                 s_item_id = str(uuid.uuid4())
                 try:
@@ -124,6 +144,8 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
                         skipped_stale += 1
                         _remember_skip(item, content_hash, "past_or_not_opportunity")
                         await db.commit()
+                        reason = "not a course" if not extraction_output.is_opportunity else "deadline already passed"
+                        crawl_progress.complete_open(str(source.id), f"Skipped, {reason}: {item_title}")
                         continue
 
                     s_item = SourceItem(
@@ -184,14 +206,17 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
                     saved_count += 1
                     if is_new:
                         published_count += 1
+                        crawl_progress.complete_open(str(source.id), f"Published: {opp.title}")
                     else:
                         updated_count += 1
+                        crawl_progress.complete_open(str(source.id), f"Updated existing listing: {opp.title}")
 
                     await db.commit()
                     logger.info(f"Crawled item {s_item_id} -> Opportunity: {opp.title} (New={is_new})")
 
                 except Exception as proc_err:
                     logger.error(f"Extraction pipeline failed for item {s_item_id}: {proc_err}")
+                    crawl_progress.complete_open(str(source.id), f"AI model failed: {item_title}")
 
             # 5. Update Source Health & Telemetry Metrics
             source.last_checked_at = datetime.now(timezone.utc)
@@ -208,6 +233,20 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
             run.items_duplicated = dup_count
             run.items_rejected = skipped_stale
             await db.commit()
+            outcome = {
+                "source_id": source_id,
+                "source_name": source.name,
+                "status": "success",
+                "items_found": discovered_count,
+                "items_saved": saved_count,
+                "items_published": published_count,
+                "items_updated": updated_count,
+                "items_duplicated": dup_count,
+                "items_skipped_stale": skipped_stale,
+            }
+            crawl_progress.attach(str(source.id), outcome)
+            crawl_progress.finish(str(source.id), "success")
+            finished = crawl_progress.snapshot(str(source.id)) or {}
 
             return {
                 "source_id": source_id,
@@ -219,6 +258,7 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
                 "items_updated": updated_count,
                 "items_duplicated": dup_count,
                 "items_skipped_stale": skipped_stale,
+                "steps": finished.get("steps", []),
             }
 
         except Exception as e:
@@ -243,13 +283,22 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
             )
             db.add(err_log)
             await db.commit()
+            crawl_progress.attach(str(source.id), {
+                "source_id": source_id,
+                "source_name": source.name,
+                "status": "failed",
+                "error": str(e),
+            })
+            crawl_progress.finish(str(source.id), "failed")
+            failed = crawl_progress.snapshot(str(source.id)) or {}
 
             return {
                 "source_id": source_id,
                 "source_name": source.name,
                 "status": "failed",
                 "error": str(e),
-                "backoff_recommended_sec": backoff
+                "backoff_recommended_sec": backoff,
+                "steps": failed.get("steps", []),
             }
 
     finally:

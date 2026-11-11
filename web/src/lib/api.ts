@@ -747,12 +747,43 @@ export async function curateOpportunity(formData: FormData): Promise<{ success: 
   }
 }
 
+export type CrawlStep = {
+  label: string;
+  seconds: number;
+  state: "done" | "active";
+};
+
+export type CrawlProgress = {
+  status: string;
+  current: string;
+  steps: CrawlStep[];
+  result?: {
+    status?: string;
+    items_found?: number;
+    items_published?: number;
+    items_duplicated?: number;
+    items_skipped_stale?: number;
+    error?: string;
+  } | null;
+};
+
+export async function fetchCrawlProgress(sourceId: string): Promise<CrawlProgress | null> {
+  try {
+    const res = await adminFetch(`${getBase()}/admin/sources/${sourceId}/crawl-progress`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function triggerSourceCrawl(sourceId: string): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
     const res = await adminFetch(`${getBase()}/admin/sources/${sourceId}/crawl`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-    });
+    }, 20000);
     const json = await res.json();
     if (!res.ok) {
       return { success: false, error: json.detail || json.message || "Failed to trigger crawl" };

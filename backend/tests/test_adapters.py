@@ -95,6 +95,51 @@ async def test_website_adapter_prefers_program_courses_over_faq_cards():
 
 
 @pytest.mark.asyncio
+async def test_website_adapter_reads_each_program_page():
+    """A course list hands the model the course page, not the short homepage card."""
+    listing_html = """
+    <html><body>
+        <article class="prog">
+            <h3>Cyber</h3>
+            <span class="pdate">Apply by <b>15 Nov 2026</b></span>
+            <a href="https://bootcamps.techdestination.com/programs/CYBER">View details</a>
+        </article>
+    </body></html>
+    """
+    course_html = """
+    <html><body>
+        <h1>Digital Forensic &amp; Cyber Security</h1>
+        <div class="prose-desc"><p>Full 12-week cyber bootcamp for graduates.</p></div>
+        <ul class="facts">
+            <li><span>Deadline</span><b>15 Nov 2026</b></li>
+            <li><span>Starts</span><b>01 Nov 2026</b></li>
+            <li><span>Status</span><b>Accepting applications</b></li>
+        </ul>
+        <div class="elig"><b>Minimum qualification:</b> Bachelor's (16 years)</div>
+        <a class="cta" href="https://bootcamps.techdestination.com/register?programme=2">Register</a>
+    </body></html>
+    """
+
+    async def fake_fetch(url, use_cache=True):
+        if "/programs/" in url:
+            return course_html, 200, {}
+        return listing_html, 200, {}
+
+    adapter = WebsiteAdapter(source_id="src-pseb", source_url="https://bootcamps.techdestination.com/")
+    with patch.object(adapter, "_fetch_html", side_effect=fake_fetch):
+        items = await adapter.fetch_items()
+
+    assert len(items) == 1
+    assert items[0].title_raw == "Digital Forensic & Cyber Security"
+    assert "Registration deadline: 15 Nov 2026" in items[0].body_raw
+    assert "Full 12-week cyber bootcamp" in items[0].body_raw
+    assert "Eligibility:" in items[0].body_raw
+    assert "register?programme=2" in items[0].body_raw
+    assert items[0].published_at is not None
+    assert items[0].published_at.day == 15
+
+
+@pytest.mark.asyncio
 async def test_api_adapter_parsing():
     sample_json = [
         {
