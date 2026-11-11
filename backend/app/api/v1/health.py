@@ -2,6 +2,7 @@
 Health Check and System Diagnostics Endpoints (Section 85).
 """
 import time
+from datetime import datetime, timezone
 from typing import Dict, Any
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -90,6 +91,16 @@ async def detailed_health_check(
         "storage": {"status": "healthy", "bucket": settings.STORAGE_BUCKET},
     }
 
+    try:
+        from app.services.ai.local_provider import LocalAIProvider, classify_office_probe
+        probe = await LocalAIProvider().test_connection()
+        office = classify_office_probe(probe, settings.LOCAL_AI_MODEL or "")
+    except Exception:
+        from app.services.ai.local_provider import classify_office_probe
+        office = classify_office_probe({"success": False}, settings.LOCAL_AI_MODEL or "")
+    office["checked_at"] = datetime.now(timezone.utc).isoformat()
+    diagnostics["office_model"] = office
+
     # Test Database
     try:
         t0 = time.time()
@@ -111,7 +122,11 @@ async def detailed_health_check(
     except Exception:
         diagnostics["redis"] = {"status": "healthy", "mode": "in_memory_task_engine"}
 
-    all_healthy = all(v.get("status") == "healthy" for v in diagnostics.values())
+    all_healthy = all(
+        v.get("status") == "healthy"
+        for key, v in diagnostics.items()
+        if key != "office_model"
+    )
     return {
         "data": {
             "status": "healthy" if all_healthy else "degraded",

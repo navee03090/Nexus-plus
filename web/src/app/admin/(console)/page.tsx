@@ -27,6 +27,13 @@ export default async function AdminDashboardPage() {
   const activeProvider = diagnostics.ai_provider?.active_provider || "none";
   const activeModel = diagnostics.ai_provider?.model || "—";
   const localAi = diagnostics.ai_provider?.local;
+  const office = diagnostics.office_model || {};
+  const officeLive = office.state === "live";
+  const officeChecked = office.checked_at ? new Date(office.checked_at) : null;
+  const officeCheckedLabel =
+    officeChecked && !Number.isNaN(officeChecked.getTime())
+      ? officeChecked.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+      : "";
   const extractionPct = Math.round((stats.ai_extraction_success_rate || 0) * 100);
   const healthOk = health?.status === "healthy";
 
@@ -38,6 +45,7 @@ export default async function AdminDashboardPage() {
             <span className={`w-2 h-2 rounded-full ${healthOk ? "bg-emerald-400" : "bg-amber-400"} animate-pulse`} />
             <span>
               {healthOk ? "API reachable" : "API degraded or waking"} • crawl {crawlMode}
+              {office.label ? ` • ${office.label}` : ""}
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-np-text tracking-tight">
@@ -147,12 +155,18 @@ export default async function AdminDashboardPage() {
                 {aiStatus} • {activeProvider} {activeModel !== "—" ? `(${activeModel})` : ""}
               </span>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-xl bg-np-bg border border-np-border">
-              <span className="text-np-muted">Office Qwen / local model</span>
-              <span className="text-np-muted font-medium">
-                {localAi?.configured ? `${localAi.model}` : "Not connected yet"}
+            <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-np-bg border border-np-border">
+              <span className="text-np-muted">Office Qwen</span>
+              <span className={`text-right font-medium ${officeLive ? "text-np-verify" : office.state === "not_configured" ? "text-np-muted" : "text-np-warn"}`}>
+                {office.label || (localAi?.configured ? localAi.model : "Not connected yet")}
+                {officeLive && office.model ? ` • ${office.model}` : ""}
+                {office.latency_ms != null ? ` • ${office.latency_ms}ms` : ""}
+                {officeCheckedLabel ? ` • checked ${officeCheckedLabel}` : ""}
               </span>
             </div>
+            {office.detail && (
+              <p className="text-[11px] text-np-muted px-1">{office.detail}</p>
+            )}
           </div>
         </div>
 

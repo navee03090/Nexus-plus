@@ -17,6 +17,64 @@ from app.schemas.opportunity import GeminiExtractionOutput
 from app.core.config import settings
 from app.core.logging import logger
 
+def classify_office_probe(result: Dict[str, Any], configured_model: str = "") -> Dict[str, Any]:
+    """Turn a live office-model check into a status the admin page can show."""
+    model = (configured_model or result.get("configured_model") or "").strip()
+    latency = result.get("latency_ms")
+    if result.get("error") == "LOCAL_AI_BASE_URL is not configured.":
+        return {
+            "state": "not_configured",
+            "label": "Not connected yet",
+            "detail": "The office address is not saved.",
+            "model": model or None,
+            "latency_ms": None,
+        }
+    if result.get("success"):
+        available = [str(name) for name in (result.get("available_models") or []) if name]
+        model_ready = True
+        if model and available:
+            wanted = model.lower()
+            model_ready = any(wanted in name.lower() for name in available)
+        if not model_ready:
+            return {
+                "state": "model_down",
+                "label": "Computer reachable, model not running",
+                "detail": f"The office computer answered, but {model} is not loaded.",
+                "model": model or None,
+                "latency_ms": latency,
+            }
+        return {
+            "state": "live",
+            "label": "Office model live",
+            "detail": f"{model or 'The model'} answered.",
+            "model": model or None,
+            "latency_ms": latency,
+        }
+    if result.get("status_code") in (401, 403):
+        return {
+            "state": "token_refused",
+            "label": "Computer reachable, token refused",
+            "detail": "The office computer is on, but the saved token was refused.",
+            "model": model or None,
+            "latency_ms": latency,
+        }
+    if result.get("status_code"):
+        return {
+            "state": "model_down",
+            "label": "Computer reachable, model not running",
+            "detail": "The office computer answered, but the model did not.",
+            "model": model or None,
+            "latency_ms": latency,
+        }
+    return {
+        "state": "offline",
+        "label": "Office computer off",
+        "detail": "The office computer is off, asleep, or the tunnel is down.",
+        "model": model or None,
+        "latency_ms": None,
+    }
+
+
 LOCAL_SYSTEM_EXTRACTION_PROMPT = """You are NEXUS PULSE's Opportunity Intelligence Extractor.
 CRITICAL ZERO-HALLUCINATION RULES:
 1. Extract ONLY information explicitly supported by the announcement text, OCR text, or QR URLs.
