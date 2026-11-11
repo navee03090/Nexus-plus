@@ -333,6 +333,26 @@ export async function fetchLiveAdminStats() {
   return { ...EMPTY_ADMIN_STATS };
 }
 
+export type OfficeModelStatus = {
+  state?: string;
+  label?: string;
+  detail?: string;
+  model?: string | null;
+  latency_ms?: number | null;
+  checked_at?: string | null;
+};
+
+export async function checkOfficeModel(): Promise<OfficeModelStatus | null> {
+  try {
+    const res = await adminFetch(`${getBase()}/admin/office-model/check`, { method: "POST" }, 20000);
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchDetailedHealth() {
   let res: Response;
   try {

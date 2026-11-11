@@ -698,6 +698,15 @@ async def trigger_source_crawl(
     return {"data": {"source_id": str(source.id), "status": "running"}}
 
 
+@router.post("/office-model/check")
+async def check_office_model(
+    admin_claims: Dict[str, Any] = Depends(require_admin),
+):
+    """Ask the office computer right now if Qwen is answering."""
+    from app.services.ai.local_provider import probe_office_model
+    return {"data": await probe_office_model()}
+
+
 @router.get("/sources/{source_id}/crawl-progress")
 async def source_crawl_progress(
     source_id: str,

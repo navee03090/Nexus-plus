@@ -75,6 +75,19 @@ def classify_office_probe(result: Dict[str, Any], configured_model: str = "") ->
     }
 
 
+async def probe_office_model() -> Dict[str, Any]:
+    """Ask the office computer if Qwen is answering. Uses the saved server address."""
+    from datetime import datetime, timezone
+
+    try:
+        probe = await LocalAIProvider().test_connection()
+        office = classify_office_probe(probe, settings.LOCAL_AI_MODEL or "")
+    except Exception:
+        office = classify_office_probe({"success": False}, settings.LOCAL_AI_MODEL or "")
+    office["checked_at"] = datetime.now(timezone.utc).isoformat()
+    return office
+
+
 LOCAL_SYSTEM_EXTRACTION_PROMPT = """You are NEXUS PULSE's Opportunity Intelligence Extractor.
 CRITICAL ZERO-HALLUCINATION RULES:
 1. Extract ONLY information explicitly supported by the announcement text, OCR text, or QR URLs.
