@@ -5,12 +5,22 @@ Instantiates the appropriate BaseSourceAdapter strategy based on source_type and
 from typing import Dict, Any, Optional
 from app.services.ingestion.base import BaseSourceAdapter, RawEvidenceItem, RawEvidenceMedia
 from app.services.ingestion.website import WebsiteAdapter
+from app.services.ingestion.nccs import NccsChallengeAdapter
 from app.services.ingestion.rss import RSSAdapter
 from app.services.ingestion.sitemap import SitemapAdapter
 from app.services.ingestion.api import ApiAdapter
 from app.services.ingestion.social import SocialAdapter
 from app.services.ingestion.pdf import PdfAdapter
 from app.services.ingestion.manual import ManualSubmissionAdapter
+
+
+def _is_nccs_challenge(source_url: str, parser_key: str) -> bool:
+    key = (parser_key or "").lower()
+    url = (source_url or "").lower()
+    return (
+        "nccs_cybersecurity_challenge" in key
+        or "pakistancybersecuritychallenge.nccs.pk" in url
+    )
 
 
 def get_adapter_for_source(
@@ -24,6 +34,9 @@ def get_adapter_for_source(
     Factory creating configured adapter instance for a source.
     """
     st_upper = (source_type or "").upper()
+
+    if _is_nccs_challenge(source_url, parser_key):
+        return NccsChallengeAdapter(source_id=source_id, source_url=source_url, parser_key=parser_key)
 
     if st_upper in ("WEBSITE", "HTML", "PORTAL"):
         return WebsiteAdapter(source_id=source_id, source_url=source_url, parser_key=parser_key)
@@ -49,6 +62,7 @@ __all__ = [
     "RawEvidenceItem",
     "RawEvidenceMedia",
     "WebsiteAdapter",
+    "NccsChallengeAdapter",
     "RSSAdapter",
     "SitemapAdapter",
     "ApiAdapter",
