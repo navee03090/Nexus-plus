@@ -783,6 +783,10 @@ export type CrawlProgress = {
     items_published?: number;
     items_duplicated?: number;
     items_skipped_stale?: number;
+    already_saved?: string[];
+    published?: string[];
+    skipped?: string[];
+    failed?: string[];
     error?: string;
   } | null;
 };

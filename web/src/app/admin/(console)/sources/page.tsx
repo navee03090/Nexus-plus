@@ -772,8 +772,61 @@ export default function SourcesPage() {
                         {crawlFeedback[src.id]}
                       </div>
                     )}
+                    {(() => {
+                      const result = crawlRuns[src.id]?.result;
+                      const alreadySaved = result?.already_saved || [];
+                      const published = result?.published || [];
+                      const skipped = result?.skipped || [];
+                      const failed = result?.failed || [];
+                      const hasLists = alreadySaved.length + published.length + skipped.length + failed.length > 0;
+                      if (!hasLists) return null;
+                      return (
+                        <div className="mt-2 ml-auto w-72 max-h-52 overflow-y-auto rounded-lg border border-np-border bg-np-bg/80 px-2.5 py-2 text-left space-y-2">
+                          {alreadySaved.length > 0 && (
+                            <div>
+                              <div className="text-[10px] font-semibold text-np-muted mb-1">Already saved ({alreadySaved.length})</div>
+                              <ul className="space-y-0.5">
+                                {alreadySaved.map((title, index) => (
+                                  <li key={`saved-${index}`} className="text-[10px] font-mono text-np-faint">• {title}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {published.length > 0 && (
+                            <div>
+                              <div className="text-[10px] font-semibold text-np-verify mb-1">Published ({published.length})</div>
+                              <ul className="space-y-0.5">
+                                {published.map((title, index) => (
+                                  <li key={`pub-${index}`} className="text-[10px] font-mono text-np-verify">• {title}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {skipped.length > 0 && (
+                            <div>
+                              <div className="text-[10px] font-semibold text-np-warn mb-1">Skipped ({skipped.length})</div>
+                              <ul className="space-y-0.5">
+                                {skipped.map((title, index) => (
+                                  <li key={`skip-${index}`} className="text-[10px] font-mono text-np-warn">• {title}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {failed.length > 0 && (
+                            <div>
+                              <div className="text-[10px] font-semibold text-np-warn mb-1">AI failed ({failed.length})</div>
+                              <ul className="space-y-0.5">
+                                {failed.map((title, index) => (
+                                  <li key={`fail-${index}`} className="text-[10px] font-mono text-np-warn">• {title}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     {crawlRuns[src.id]?.steps?.length > 0 && (
-                      <ol className="mt-2 ml-auto max-h-40 w-64 overflow-y-auto rounded-lg border border-np-border bg-np-bg/80 px-2 py-1.5 text-left">
+                      <ol className="mt-2 ml-auto max-h-40 w-72 overflow-y-auto rounded-lg border border-np-border bg-np-bg/80 px-2 py-1.5 text-left">
                         {crawlRuns[src.id].steps.map((step, index) => (
                           <li key={`${step.label}-${index}`} className="flex items-start justify-between gap-2 py-0.5 text-[10px] font-mono text-np-muted">
                             <span className={step.state === "active" ? "text-np-accent" : "text-np-muted"}>

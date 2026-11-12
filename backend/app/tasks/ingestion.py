@@ -91,6 +91,10 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
             updated_count = 0
             dup_count = 0
             skipped_stale = 0
+            already_saved_titles: List[str] = []
+            published_titles: List[str] = []
+            skipped_titles: List[str] = []
+            failed_titles: List[str] = []
 
             def _remember_skip(item_obj, content_hash_val: str, reason: str) -> None:
                 db.add(SourceItem(
@@ -119,11 +123,13 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
 
                 if existing_item:
                     dup_count += 1
+                    already_saved_titles.append(item_title)
                     crawl_progress.complete_open(str(source.id), f"Already saved: {item_title}")
                     continue
 
                 if is_stale_announcement(item.published_at, lookback_days=settings.CRAWL_LOOKBACK_DAYS):
                     skipped_stale += 1
+                    skipped_titles.append(f"{item_title} (too old)")
                     _remember_skip(item, content_hash, "stale_announcement")
                     await db.commit()
                     crawl_progress.complete_open(str(source.id), f"Skipped, too old: {item_title}")
@@ -142,9 +148,10 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
                         start_date=data.get("start_date"),
                     ):
                         skipped_stale += 1
+                        reason = "not a course" if not extraction_output.is_opportunity else "deadline already passed"
+                        skipped_titles.append(f"{item_title} ({reason})")
                         _remember_skip(item, content_hash, "past_or_not_opportunity")
                         await db.commit()
-                        reason = "not a course" if not extraction_output.is_opportunity else "deadline already passed"
                         crawl_progress.complete_open(str(source.id), f"Skipped, {reason}: {item_title}")
                         continue
 
@@ -206,6 +213,7 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
                     saved_count += 1
                     if is_new:
                         published_count += 1
+                        published_titles.append(opp.title)
                         crawl_progress.complete_open(str(source.id), f"Published: {opp.title}")
                     else:
                         updated_count += 1
@@ -216,6 +224,7 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
 
                 except Exception as proc_err:
                     logger.error(f"Extraction pipeline failed for item {s_item_id}: {proc_err}")
+                    failed_titles.append(item_title)
                     crawl_progress.complete_open(str(source.id), f"AI model failed: {item_title}")
 
             # 5. Update Source Health & Telemetry Metrics
@@ -243,21 +252,17 @@ async def execute_source_crawl(source_id: str, db: Optional[Any] = None) -> Dict
                 "items_updated": updated_count,
                 "items_duplicated": dup_count,
                 "items_skipped_stale": skipped_stale,
+                "already_saved": already_saved_titles,
+                "published": published_titles,
+                "skipped": skipped_titles,
+                "failed": failed_titles,
             }
             crawl_progress.attach(str(source.id), outcome)
             crawl_progress.finish(str(source.id), "success")
             finished = crawl_progress.snapshot(str(source.id)) or {}
 
             return {
-                "source_id": source_id,
-                "source_name": source.name,
-                "status": "success",
-                "items_found": discovered_count,
-                "items_saved": saved_count,
-                "items_published": published_count,
-                "items_updated": updated_count,
-                "items_duplicated": dup_count,
-                "items_skipped_stale": skipped_stale,
+                **outcome,
                 "steps": finished.get("steps", []),
             }
 
